@@ -10,3 +10,9 @@ This repo owns semantic contracts used by the launcher/runtime:
 
 Launchers and native/Wasm adapters consume these contracts. They do not own
 source kind semantics, capability ids, or host import ABI shape.
+
+## Test
+
+```sh
+clojure -M:test
+```
