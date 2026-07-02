@@ -1,0 +1,31 @@
+{:schema "kotoba.lang.source-contract.v0"
+ :owner "kotoba/lang"
+ :canonical-format :edn
+ :authority "kotoba-lang/kotoba-core-contracts"
+ :source-kinds {:kotoba {:extensions [".kotoba"]
+                         :reader-target :kotoba
+                         :canonical? true
+                         :safe-gate-required? true}
+                :clj {:extensions [".clj"]
+                      :reader-target :clj
+                      :canonical? false
+                      :safe-gate-required? true}
+                :cljc {:extensions [".cljc"]
+                       :reader-target :kotoba
+                       :reader-targets [:kotoba :clj :cljs]
+                       :canonical? false
+                       :portable? true
+                       :safe-gate-required? true}
+                :edn {:extensions [".edn"]
+                      :reader-target :edn
+                      :canonical? false
+                      :data? true
+                      :safe-gate-required? false}}
+ :namespace-resolution {:kotoba [".kotoba" ".cljc" ".clj"]
+                        :clj [".cljc" ".clj" ".kotoba"]
+                        :cljs [".cljc" ".clj" ".kotoba"]}
+ :default-reader-target :kotoba
+ :dispatch-policy {:launcher "classify source path and delegate to CLJC authority"
+                   :eval "compile-and-run through source contract, not unrestricted host eval"
+                   :cljc "evaluate with explicit reader target; default target is :kotoba"
+                   :safety "all executable source kinds pass safe analyzer facts and capability policy"}}

@@ -1,0 +1,78 @@
+{:schema "kotoba.runtime.capability-contract.v0"
+ :owner "kotoba/runtime"
+ :canonical-format :edn
+ :authority "kotoba-lang/kotoba-core-contracts"
+ :capability-ids {"ledger/append" 201
+                  "fs/app-data" 202
+                  "notify/show" 203
+                  "clipboard/text" 204
+                  "http/fetch" 205
+                  "keychain/text" 206
+                  "contacts/read" 207
+                  "calendar/read" 208}
+ :special-forms #{do let if quote def defn ns}
+ :host-import-order [has-capability?
+                     notify-show
+                     clipboard-read
+                     clipboard-write
+                     clipboard-write-str
+                     http-fetch
+                     keychain-read
+                     keychain-write
+                     fs-read
+                     fs-write
+                     host-i64-roundtrip]
+ :host-imports {has-capability? {:module "kotoba"
+                                 :field "has_capability"
+                                 :params [:i32]
+                                 :result :i32}
+                notify-show {:module "kotoba"
+                             :field "notify_show"
+                             :capability "notify/show"
+                             :params [:i32]
+                             :result :i32}
+                clipboard-read {:module "kotoba"
+                                :field "clipboard_read"
+                                :capability "clipboard/text"
+                                :params [:i32 :i32]
+                                :result :i32}
+                clipboard-write {:module "kotoba"
+                                 :field "clipboard_write"
+                                 :capability "clipboard/text"
+                                 :params [:i32 :i32]
+                                 :result :i32}
+                clipboard-write-str {:module "kotoba"
+                                     :field "clipboard_write_str"
+                                     :capability "clipboard/text"
+                                     :params [:i32 :i32]
+                                     :result :i32}
+                http-fetch {:module "kotoba"
+                            :field "http_fetch"
+                            :capability "http/fetch"
+                            :params [:i32 :i32 :i32 :i32]
+                            :result :i32}
+                keychain-read {:module "kotoba"
+                               :field "keychain_read"
+                               :capability "keychain/text"
+                               :params [:i32 :i32 :i32 :i32]
+                               :result :i32}
+                keychain-write {:module "kotoba"
+                                :field "keychain_write"
+                                :capability "keychain/text"
+                                :params [:i32 :i32 :i32 :i32]
+                                :result :i32}
+                fs-read {:module "kotoba"
+                         :field "fs_read"
+                         :capability "fs/app-data"
+                         :params [:i32 :i32 :i32 :i32]
+                         :result :i32}
+                fs-write {:module "kotoba"
+                          :field "fs_write"
+                          :capability "fs/app-data"
+                          :params [:i32 :i32 :i32 :i32]
+                          :result :i32}
+                host-i64-roundtrip {:module "kotoba"
+                                    :field "host_i64_roundtrip"
+                                    :capability "ledger/append"
+                                    :params [:i64]
+                                    :result :i64}}}
