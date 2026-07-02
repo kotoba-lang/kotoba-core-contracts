@@ -43,7 +43,8 @@
     (is (= "http_fetch" (get-in contract [:host-imports 'http-fetch :field])))
     (is (= '[has-capability? notify-show clipboard-read clipboard-write
              clipboard-write-str http-fetch keychain-read keychain-write
-             fs-read fs-write host-i64-roundtrip]
+             fs-read fs-write host-i64-roundtrip
+             kgraph-assert! kgraph-retract! kgraph-get-objects kgraph-query]
            (contracts/host-import-order contract)))))
 
 (deftest capability-contract-rejects-drift
