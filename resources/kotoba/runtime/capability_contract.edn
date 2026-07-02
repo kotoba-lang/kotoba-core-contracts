@@ -9,7 +9,8 @@
                   "http/fetch" 205
                   "keychain/text" 206
                   "contacts/read" 207
-                  "calendar/read" 208}
+                  "calendar/read" 208
+                  "graph/kotoba" 209}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -21,7 +22,11 @@
                      keychain-write
                      fs-read
                      fs-write
-                     host-i64-roundtrip]
+                     host-i64-roundtrip
+                     kgraph-assert!
+                     kgraph-retract!
+                     kgraph-get-objects
+                     kgraph-query]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -75,4 +80,24 @@
                                     :field "host_i64_roundtrip"
                                     :capability "ledger/append"
                                     :params [:i64]
-                                    :result :i64}}}
+                                    :result :i64}
+                kgraph-assert! {:module "kotoba"
+                                :field "kgraph_assert"
+                                :capability "graph/kotoba"
+                                :params [:i32 :i32]
+                                :result :i32}
+                kgraph-retract! {:module "kotoba"
+                                 :field "kgraph_retract"
+                                 :capability "graph/kotoba"
+                                 :params [:i32 :i32]
+                                 :result :i32}
+                kgraph-get-objects {:module "kotoba"
+                                    :field "kgraph_get_objects"
+                                    :capability "graph/kotoba"
+                                    :params [:i32 :i32 :i32 :i32]
+                                    :result :i32}
+                kgraph-query {:module "kotoba"
+                              :field "kgraph_query"
+                              :capability "graph/kotoba"
+                              :params [:i32 :i32 :i32 :i32]
+                              :result :i32}}}
