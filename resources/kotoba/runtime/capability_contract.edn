@@ -10,7 +10,16 @@
                   "keychain/text" 206
                   "contacts/read" 207
                   "calendar/read" 208
-                  "graph/kotoba" 209}
+                  "graph/kotoba" 209
+                  "log/write" 210
+                  "clock/monotonic" 211
+                  "random/bytes" 212
+                  "topic/publish" 213
+                  "topic/subscribe" 214
+                  "pci/config" 215
+                  "dma/map" 216
+                  "irq/subscribe" 217
+                  "mmio/map" 218}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -26,7 +35,18 @@
                      kgraph-assert!
                      kgraph-retract!
                      kgraph-get-objects
-                     kgraph-query]
+                     kgraph-query
+                     log-write
+                     clock-monotonic
+                     random-bytes
+                     topic-publish
+                     topic-poll
+                     topic-take
+                     topic-count
+                     pci-config
+                     dma-map
+                     irq-subscribe
+                     mmio-map]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -100,4 +120,59 @@
                               :field "kgraph_query"
                               :capability "graph/kotoba"
                               :params [:i32 :i32 :i32 :i32]
-                              :result :i32}}}
+                              :result :i32}
+                log-write {:module "kotoba"
+                           :field "log_write"
+                           :capability "log/write"
+                           :params [:i32 :i32]
+                           :result :i32}
+                clock-monotonic {:module "kotoba"
+                                 :field "clock_monotonic"
+                                 :capability "clock/monotonic"
+                                 :params []
+                                 :result :i64}
+                random-bytes {:module "kotoba"
+                              :field "random_bytes"
+                              :capability "random/bytes"
+                              :params [:i32 :i32]
+                              :result :i32}
+                topic-publish {:module "kotoba"
+                               :field "topic_publish"
+                               :capability "topic/publish"
+                               :params [:i32 :i64]
+                               :result :i32}
+                topic-poll {:module "kotoba"
+                            :field "topic_poll"
+                            :capability "topic/subscribe"
+                            :params [:i32]
+                            :result :i64}
+                topic-take {:module "kotoba"
+                            :field "topic_take"
+                            :capability "topic/subscribe"
+                            :params [:i32]
+                            :result :i64}
+                topic-count {:module "kotoba"
+                             :field "topic_count"
+                             :capability "topic/subscribe"
+                             :params [:i32]
+                             :result :i64}
+                pci-config {:module "kotoba"
+                            :field "pci_config"
+                            :capability "pci/config"
+                            :params [:i32 :i32]
+                            :result :i32}
+                dma-map {:module "kotoba"
+                         :field "dma_map"
+                         :capability "dma/map"
+                         :params [:i32 :i32]
+                         :result :i64}
+                irq-subscribe {:module "kotoba"
+                               :field "irq_subscribe"
+                               :capability "irq/subscribe"
+                               :params [:i32]
+                               :result :i64}
+                mmio-map {:module "kotoba"
+                          :field "mmio_map"
+                          :capability "mmio/map"
+                          :params [:i64 :i32]
+                          :result :i64}}}

@@ -44,8 +44,30 @@
     (is (= '[has-capability? notify-show clipboard-read clipboard-write
              clipboard-write-str http-fetch keychain-read keychain-write
              fs-read fs-write host-i64-roundtrip
-             kgraph-assert! kgraph-retract! kgraph-get-objects kgraph-query]
+             kgraph-assert! kgraph-retract! kgraph-get-objects kgraph-query
+             log-write clock-monotonic random-bytes topic-publish topic-poll
+             topic-take topic-count pci-config dma-map irq-subscribe mmio-map]
            (contracts/host-import-order contract)))))
+
+(deftest aiueos-kernel-cap-host-imports-registered
+  ;; aiueos's 9 default kernel capabilities (aiueos.policy/default-kernel-caps
+  ;; in aiueos-cljc-contract), registered per ADR-2607022700 so a `.kotoba`
+  ;; guest component can `cap-acquire` them. topic/subscribe backs three ops
+  ;; (poll/take/count), matching the retired Rust surface.rs registry.
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (doseq [[cap id] {"log/write" 210 "clock/monotonic" 211 "random/bytes" 212
+                       "topic/publish" 213 "topic/subscribe" 214 "pci/config" 215
+                       "dma/map" 216 "irq/subscribe" 217 "mmio/map" 218}]
+      (is (= id (contracts/capability-id contract cap)) cap))
+    (doseq [[op cap] {'log-write "log/write" 'clock-monotonic "clock/monotonic"
+                       'random-bytes "random/bytes" 'topic-publish "topic/publish"
+                       'topic-poll "topic/subscribe" 'topic-take "topic/subscribe"
+                       'topic-count "topic/subscribe" 'pci-config "pci/config"
+                       'dma-map "dma/map" 'irq-subscribe "irq/subscribe"
+                       'mmio-map "mmio/map"}]
+      (is (= cap (get-in contract [:host-imports op :capability])) op)
+      (is (= "kotoba" (get-in contract [:host-imports op :module])) op))))
 
 (deftest capability-contract-rejects-drift
   (let [contract (contracts/capability-contract)]
