@@ -46,8 +46,32 @@
              fs-read fs-write host-i64-roundtrip
              kgraph-assert! kgraph-retract! kgraph-get-objects kgraph-query
              log-write clock-monotonic random-bytes topic-publish topic-poll
-             topic-take topic-count pci-config dma-map irq-subscribe mmio-map]
+             topic-take topic-count pci-config dma-map irq-subscribe mmio-map
+             gen-keypair sign verify sha256-hex http-post log-read]
            (contracts/host-import-order contract)))))
+
+(deftest kototama-actor-host-imports-registered
+  ;; kotoba-lang/kototama's actor:host ABI (kototama.contract /
+  ;; kototama.tender, ADR-2607062330/2607062400): 6 of its 8 imports are
+  ;; net-new here -- log-write/clock-monotonic already existed (registered
+  ;; independently for aiueos's kernel capabilities, ADR-2607022700, with
+  ;; identical wire signatures -- kototama's own :now/:log-append! were
+  ;; renamed to reuse them rather than duplicate the registration).
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (doseq [[cap id] {"identity/keypair" 219 "identity/sign" 220
+                       "identity/verify" 221 "hash/sha256" 222
+                       "http/post" 223 "log/read" 224}]
+      (is (= id (contracts/capability-id contract cap)) cap))
+    (doseq [[op [cap field]] {'gen-keypair ["identity/keypair" "gen_keypair"]
+                              'sign ["identity/sign" "sign"]
+                              'verify ["identity/verify" "verify"]
+                              'sha256-hex ["hash/sha256" "sha256_hex"]
+                              'http-post ["http/post" "http_post"]
+                              'log-read ["log/read" "log_read"]}]
+      (is (= cap (get-in contract [:host-imports op :capability])) op)
+      (is (= field (get-in contract [:host-imports op :field])) op)
+      (is (= "kotoba" (get-in contract [:host-imports op :module])) op))))
 
 (deftest aiueos-kernel-cap-host-imports-registered
   ;; aiueos's 9 default kernel capabilities (aiueos.policy/default-kernel-caps

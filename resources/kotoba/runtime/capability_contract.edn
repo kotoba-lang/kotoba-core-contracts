@@ -19,7 +19,18 @@
                   "pci/config" 215
                   "dma/map" 216
                   "irq/subscribe" 217
-                  "mmio/map" 218}
+                  "mmio/map" 218
+                  ;; kotoba-lang/kototama's actor:host ABI (kototama.contract
+                  ;; / kototama.tender, ADR-2607062330/2607062400) -- module
+                  ;; "kotoba", same host as everything above, so a guest can
+                  ;; freely mix these with the kernel-capability imports
+                  ;; already registered.
+                  "identity/keypair" 219
+                  "identity/sign" 220
+                  "identity/verify" 221
+                  "hash/sha256" 222
+                  "http/post" 223
+                  "log/read" 224}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -46,7 +57,13 @@
                      pci-config
                      dma-map
                      irq-subscribe
-                     mmio-map]
+                     mmio-map
+                     gen-keypair
+                     sign
+                     verify
+                     sha256-hex
+                     http-post
+                     log-read]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -175,4 +192,34 @@
                           :field "mmio_map"
                           :capability "mmio/map"
                           :params [:i64 :i32]
-                          :result :i64}}}
+                          :result :i64}
+                gen-keypair {:module "kotoba"
+                             :field "gen_keypair"
+                             :capability "identity/keypair"
+                             :params [:i32 :i32]
+                             :result :i32}
+                sign {:module "kotoba"
+                      :field "sign"
+                      :capability "identity/sign"
+                      :params [:i32 :i32 :i32 :i32 :i32]
+                      :result :i32}
+                verify {:module "kotoba"
+                        :field "verify"
+                        :capability "identity/verify"
+                        :params [:i32 :i32 :i32 :i32 :i32 :i32]
+                        :result :i32}
+                sha256-hex {:module "kotoba"
+                            :field "sha256_hex"
+                            :capability "hash/sha256"
+                            :params [:i32 :i32 :i32 :i32]
+                            :result :i32}
+                http-post {:module "kotoba"
+                           :field "http_post"
+                           :capability "http/post"
+                           :params [:i32 :i32 :i32 :i32 :i32 :i32]
+                           :result :i32}
+                log-read {:module "kotoba"
+                          :field "log_read"
+                          :capability "log/read"
+                          :params [:i32 :i32]
+                          :result :i32}}}
