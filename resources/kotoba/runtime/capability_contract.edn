@@ -30,7 +30,11 @@
                   "identity/verify" 221
                   "hash/sha256" 222
                   "http/post" 223
-                  "log/read" 224}
+                  "log/read" 224
+                  ;; `llm-infer` -- kototama.tender's Anthropic Messages API
+                  ;; call (ADR-2607062330's llm-infer addendum). Same module
+                  ;; "kotoba" as everything above.
+                  "llm/infer" 225}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -63,7 +67,8 @@
                      verify
                      sha256-hex
                      http-post
-                     log-read]
+                     log-read
+                     llm-infer]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -222,4 +227,9 @@
                           :field "log_read"
                           :capability "log/read"
                           :params [:i32 :i32]
-                          :result :i32}}}
+                          :result :i32}
+                llm-infer {:module "kotoba"
+                           :field "llm_infer"
+                           :capability "llm/infer"
+                           :params [:i32 :i32 :i32 :i32]
+                           :result :i32}}}
