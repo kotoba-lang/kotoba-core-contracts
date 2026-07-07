@@ -47,7 +47,7 @@
              kgraph-assert! kgraph-retract! kgraph-get-objects kgraph-query
              log-write clock-monotonic random-bytes topic-publish topic-poll
              topic-take topic-count pci-config dma-map irq-subscribe mmio-map
-             gen-keypair sign verify sha256-hex http-post log-read]
+             gen-keypair sign verify sha256-hex http-post log-read llm-infer]
            (contracts/host-import-order contract)))))
 
 (deftest kototama-actor-host-imports-registered
@@ -72,6 +72,17 @@
       (is (= cap (get-in contract [:host-imports op :capability])) op)
       (is (= field (get-in contract [:host-imports op :field])) op)
       (is (= "kotoba" (get-in contract [:host-imports op :module])) op))))
+
+(deftest llm-infer-host-import-registered
+  ;; kototama.tender's Anthropic Messages API call, registered net-new
+  ;; here (not shared with any pre-existing kernel capability).
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (is (= 225 (contracts/capability-id contract "llm/infer")))
+    (is (= "llm/infer" (get-in contract [:host-imports 'llm-infer :capability])))
+    (is (= "llm_infer" (get-in contract [:host-imports 'llm-infer :field])))
+    (is (= "kotoba" (get-in contract [:host-imports 'llm-infer :module])))
+    (is (= [:i32 :i32 :i32 :i32] (get-in contract [:host-imports 'llm-infer :params])))))
 
 (deftest aiueos-kernel-cap-host-imports-registered
   ;; aiueos's 9 default kernel capabilities (aiueos.policy/default-kernel-caps
