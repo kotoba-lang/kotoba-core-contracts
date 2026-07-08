@@ -7,11 +7,13 @@
     (is (= [] (contracts/validate-source-contract contract)))
     (is (= :kotoba (contracts/source-kind contract "src/app.kotoba")))
     (is (= :cljc (contracts/source-kind contract "src/shared.cljc")))
-    (is (nil? (contracts/source-kind contract "src/app.cljs")))
+    (is (= :cljs (contracts/source-kind contract "src/app.cljs")))
     (is (= :edn (contracts/source-kind contract "policy.edn")))
     (is (nil? (contracts/source-kind contract "README.md")))
     (is (= :kotoba (:kotoba.source/reader-target
-                    (contracts/source-plan contract "src/shared.cljc"))))))
+                    (contracts/source-plan contract "src/shared.cljc"))))
+    (is (= :cljs (:kotoba.source/reader-target
+                  (contracts/source-plan contract "src/app.cljs"))))))
 
 (deftest source-contract-rejects-drift
   (let [contract (contracts/source-contract)]
