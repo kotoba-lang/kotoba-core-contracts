@@ -16,14 +16,18 @@
                        :canonical? false
                        :portable? true
                        :safe-gate-required? true}
+                :cljs {:extensions [".cljs"]
+                       :reader-target :cljs
+                       :canonical? false
+                       :safe-gate-required? true}
                 :edn {:extensions [".edn"]
                       :reader-target :edn
                       :canonical? false
                       :data? true
                       :safe-gate-required? false}}
- :namespace-resolution {:kotoba [".kotoba" ".cljc" ".clj"]
-                        :clj [".cljc" ".clj" ".kotoba"]
-                        :cljs [".cljc" ".clj" ".kotoba"]}
+ :namespace-resolution {:kotoba [".kotoba" ".cljc" ".clj" ".cljs"]
+                        :clj [".cljc" ".clj" ".kotoba" ".cljs"]
+                        :cljs [".cljc" ".cljs" ".clj" ".kotoba"]}
  :default-reader-target :kotoba
  :dispatch-policy {:launcher "classify source path and delegate to CLJC authority"
                    :eval "compile-and-run through source contract, not unrestricted host eval"
