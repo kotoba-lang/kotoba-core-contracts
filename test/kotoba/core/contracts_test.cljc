@@ -47,7 +47,8 @@
              kgraph-assert! kgraph-retract! kgraph-get-objects kgraph-query
              log-write clock-monotonic random-bytes topic-publish topic-poll
              topic-take topic-count pci-config dma-map irq-subscribe mmio-map
-             gen-keypair sign verify sha256-hex http-post log-read llm-infer]
+             gen-keypair sign verify sha256-hex http-post log-read llm-infer
+             gpu-clear]
            (contracts/host-import-order contract)))))
 
 (deftest kototama-actor-host-imports-registered
@@ -83,6 +84,20 @@
     (is (= "llm_infer" (get-in contract [:host-imports 'llm-infer :field])))
     (is (= "kotoba" (get-in contract [:host-imports 'llm-infer :module])))
     (is (= [:i32 :i32 :i32 :i32] (get-in contract [:host-imports 'llm-infer :params])))))
+
+(deftest gpu-clear-host-import-registered
+  ;; ADR-2607078000 Track B Phase 0 spike: the first kami:engine-independent
+  ;; GPU host-import, registered net-new here (browser-only in practice --
+  ;; no JVM WebGPU implementation exists or is planned; kotoba-core-contracts
+  ;; itself stays host-neutral, same as every other entry in this table).
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (is (= 226 (contracts/capability-id contract "gpu/clear")))
+    (is (= "gpu/clear" (get-in contract [:host-imports 'gpu-clear :capability])))
+    (is (= "gpu_clear" (get-in contract [:host-imports 'gpu-clear :field])))
+    (is (= "kotoba" (get-in contract [:host-imports 'gpu-clear :module])))
+    (is (= [:i32] (get-in contract [:host-imports 'gpu-clear :params])))
+    (is (= :i32 (get-in contract [:host-imports 'gpu-clear :result])))))
 
 (deftest aiueos-kernel-cap-host-imports-registered
   ;; aiueos's 9 default kernel capabilities (aiueos.policy/default-kernel-caps
