@@ -48,7 +48,7 @@
              log-write clock-monotonic random-bytes topic-publish topic-poll
              topic-take topic-count pci-config dma-map irq-subscribe mmio-map
              gen-keypair sign verify sha256-hex http-post log-read llm-infer
-             gpu-clear]
+             gpu-clear cos sin gpu-set-position gpu-draw-frame]
            (contracts/host-import-order contract)))))
 
 (deftest kototama-actor-host-imports-registered
