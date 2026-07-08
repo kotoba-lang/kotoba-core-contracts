@@ -50,7 +50,8 @@
              log-write clock-monotonic random-bytes topic-publish topic-poll
              topic-take topic-count pci-config dma-map irq-subscribe mmio-map
              gen-keypair sign verify sha256-hex http-post log-read llm-infer
-             gpu-clear cos sin gpu-set-position gpu-draw-frame]
+             gpu-clear cos sin gpu-set-position gpu-draw-frame
+             now-days galactic-frame?]
            (contracts/host-import-order contract)))))
 
 (deftest kototama-actor-host-imports-registered
@@ -135,6 +136,27 @@
     (is (= "gpu_draw_frame" (get-in contract [:host-imports 'gpu-draw-frame :field])))
     (is (= [] (get-in contract [:host-imports 'gpu-draw-frame :params])) "no-arg -- draws every stored position")
     (is (= :i32 (get-in contract [:host-imports 'gpu-draw-frame :result])))))
+
+(deftest now-days-and-galactic-frame-host-imports-registered
+  ;; ADR-2607078000 Track B Phase 1 follow-up: animation (now-days) +
+  ;; galactic-frame toggle (galactic-frame?). Both are host-owned state the
+  ;; guest reads with a no-arg call -- no guest-side clock/loop and no new
+  ;; wasm export beyond `main` needed for either.
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (is (= 231 (contracts/capability-id contract "time/now-days")))
+    (is (= "time/now-days" (get-in contract [:host-imports 'now-days :capability])))
+    (is (= "now_days" (get-in contract [:host-imports 'now-days :field])))
+    (is (= "kotoba" (get-in contract [:host-imports 'now-days :module])))
+    (is (= [] (get-in contract [:host-imports 'now-days :params])) "no-arg -- host owns the clock")
+    (is (= :f32 (get-in contract [:host-imports 'now-days :result])))
+
+    (is (= 232 (contracts/capability-id contract "render/galactic-frame")))
+    (is (= "render/galactic-frame" (get-in contract [:host-imports 'galactic-frame? :capability])))
+    (is (= "galactic_frame" (get-in contract [:host-imports 'galactic-frame? :field])))
+    (is (= [] (get-in contract [:host-imports 'galactic-frame? :params])) "no-arg -- host owns the toggle")
+    (is (= :i32 (get-in contract [:host-imports 'galactic-frame? :result]))
+        "an i32 is directly usable as a wasm `if` condition, nonzero = true")))
 
 (deftest aiueos-kernel-cap-host-imports-registered
   ;; aiueos's 9 default kernel capabilities (aiueos.policy/default-kernel-caps

@@ -53,7 +53,18 @@
                   "math/cos" 227
                   "math/sin" 228
                   "gpu/set-position" 229
-                  "gpu/draw-frame" 230}
+                  "gpu/draw-frame" 230
+                  ;; ADR-2607078000 Track B Phase 1 follow-up: animation +
+                  ;; galactic-frame toggle. `now-days` lets the guest read a
+                  ;; host-owned, wrapped simulated day count instead of a
+                  ;; fixed t (the host advances/wraps it every
+                  ;; requestAnimationFrame tick and just calls the guest's
+                  ;; 0-arg `main` again -- no guest-side loop or wasm export
+                  ;; beyond `main` needed). `galactic-frame?` lets the guest
+                  ;; read a host-owned boolean (a page checkbox) to decide
+                  ;; whether to apply the tilt+forward-drift transform.
+                  "time/now-days" 231
+                  "render/galactic-frame" 232}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -92,7 +103,9 @@
                      cos
                      sin
                      gpu-set-position
-                     gpu-draw-frame]
+                     gpu-draw-frame
+                     now-days
+                     galactic-frame?]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -303,4 +316,26 @@
                                 :field "gpu_draw_frame"
                                 :capability "gpu/draw-frame"
                                 :params []
-                                :result :i32}}}
+                                :result :i32}
+                ;; now-days() -> f32. The host's current simulated day count
+                ;; (wrapped to a bounded window so a guest computing
+                ;; positions from it never drifts out of camera frustum) --
+                ;; the host recomputes this from wall-clock time once per
+                ;; requestAnimationFrame tick, before calling `main` again.
+                ;; No guest-side clock/loop needed.
+                now-days {:module "kotoba"
+                          :field "now_days"
+                          :capability "time/now-days"
+                          :params []
+                          :result :f32}
+                ;; galactic-frame?() -> 0|1. Host-owned view toggle (a page
+                ;; checkbox): 1 selects the tilt+forward-drift ("helix")
+                ;; transform, 0 the flat heliocentric view. A wasm i32 is
+                ;; directly usable as an `if` condition (nonzero = true),
+                ;; so the guest can branch on this value with no additional
+                ;; boolean-decoding step.
+                galactic-frame? {:module "kotoba"
+                                 :field "galactic_frame"
+                                 :capability "render/galactic-frame"
+                                 :params []
+                                 :result :i32}}}
