@@ -18,7 +18,7 @@
 (deftest source-contract-rejects-drift
   (let [contract (contracts/source-contract)]
     (is (thrown-with-msg?
-         clojure.lang.ExceptionInfo #"unsupported Kotoba reader target"
+         #?(:clj clojure.lang.ExceptionInfo :cljs js/Error) #"unsupported Kotoba reader target"
          (contracts/source-plan contract "src/shared.cljc" :unsupported)))
     (is (some #(= :duplicate-extensions (:problem %))
               (contracts/validate-source-contract
@@ -34,7 +34,7 @@
                (assoc-in contract [:namespace-resolution :kotoba]
                          [".unknown"]))))
     (is (thrown-with-msg?
-         clojure.lang.ExceptionInfo #"unsupported Kotoba source extension"
+         #?(:clj clojure.lang.ExceptionInfo :cljs js/Error) #"unsupported Kotoba source extension"
          (contracts/source-plan contract "README.md")))))
 
 (deftest source-contract-rejects-further-drift
