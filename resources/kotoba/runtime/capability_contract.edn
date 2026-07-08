@@ -34,7 +34,16 @@
                   ;; `llm-infer` -- kototama.tender's Anthropic Messages API
                   ;; call (ADR-2607062330's llm-infer addendum). Same module
                   ;; "kotoba" as everything above.
-                  "llm/infer" 225}
+                  "llm/infer" 225
+                  ;; `gpu-clear` -- ADR-2607078000 Track B Phase 0 spike: the
+                  ;; first `kami:engine`-independent GPU host-import, proving
+                  ;; a guest-driven WebGPU call is possible over a synchronous
+                  ;; Wasm host-import (the browser host does one-time async
+                  ;; device/adapter setup BEFORE the guest runs; every
+                  ;; per-frame call after that, including this one, is
+                  ;; genuinely synchronous per the WebGPU spec). Same module
+                  ;; "kotoba" as everything above.
+                  "gpu/clear" 226}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -68,7 +77,8 @@
                      sha256-hex
                      http-post
                      log-read
-                     llm-infer]
+                     llm-infer
+                     gpu-clear]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -232,4 +242,13 @@
                            :field "llm_infer"
                            :capability "llm/infer"
                            :params [:i32 :i32 :i32 :i32]
+                           :result :i32}
+                ;; gpu-clear(rgba8: i32) -> 0|-1. `rgba8` is a packed 0xRRGGBBAA
+                ;; 32-bit color; the browser host clears the (host-owned,
+                ;; pre-created before the guest ever runs) WebGPU canvas to
+                ;; that color via a synchronous render-pass + queue.submit.
+                gpu-clear {:module "kotoba"
+                           :field "gpu_clear"
+                           :capability "gpu/clear"
+                           :params [:i32]
                            :result :i32}}}
