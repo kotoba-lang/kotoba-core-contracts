@@ -101,6 +101,41 @@
     (is (= [:i32] (get-in contract [:host-imports 'gpu-clear :params])))
     (is (= :i32 (get-in contract [:host-imports 'gpu-clear :result])))))
 
+(deftest cos-sin-gpu-set-position-gpu-draw-frame-host-imports-registered
+  ;; ADR-2607078000 Track B Phase 1: real f32 host-imports (kotoba-lang/
+  ;; kotoba's compiler gained native f32 param/result support for this)
+  ;; for orbital math (cos/sin) and the render-guest loop
+  ;; (gpu-set-position/gpu-draw-frame) -- only gpu-clear had its own
+  ;; dedicated field-lookup test before this (unlike gpu-clear, these were
+  ;; previously only checked via the single golden host-import-order list).
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (is (= 227 (contracts/capability-id contract "math/cos")))
+    (is (= "math/cos" (get-in contract [:host-imports 'cos :capability])))
+    (is (= "cos" (get-in contract [:host-imports 'cos :field])))
+    (is (= "kotoba" (get-in contract [:host-imports 'cos :module])))
+    (is (= [:f32] (get-in contract [:host-imports 'cos :params])))
+    (is (= :f32 (get-in contract [:host-imports 'cos :result])))
+
+    (is (= 228 (contracts/capability-id contract "math/sin")))
+    (is (= "math/sin" (get-in contract [:host-imports 'sin :capability])))
+    (is (= "sin" (get-in contract [:host-imports 'sin :field])))
+    (is (= [:f32] (get-in contract [:host-imports 'sin :params])))
+    (is (= :f32 (get-in contract [:host-imports 'sin :result])))
+
+    (is (= 229 (contracts/capability-id contract "gpu/set-position")))
+    (is (= "gpu/set-position" (get-in contract [:host-imports 'gpu-set-position :capability])))
+    (is (= "gpu_set_position" (get-in contract [:host-imports 'gpu-set-position :field])))
+    (is (= [:i32 :f32 :f32 :f32] (get-in contract [:host-imports 'gpu-set-position :params]))
+        "body-id: i32, x/y/z: f32")
+    (is (= :i32 (get-in contract [:host-imports 'gpu-set-position :result])))
+
+    (is (= 230 (contracts/capability-id contract "gpu/draw-frame")))
+    (is (= "gpu/draw-frame" (get-in contract [:host-imports 'gpu-draw-frame :capability])))
+    (is (= "gpu_draw_frame" (get-in contract [:host-imports 'gpu-draw-frame :field])))
+    (is (= [] (get-in contract [:host-imports 'gpu-draw-frame :params])) "no-arg -- draws every stored position")
+    (is (= :i32 (get-in contract [:host-imports 'gpu-draw-frame :result])))))
+
 (deftest aiueos-kernel-cap-host-imports-registered
   ;; aiueos's 9 default kernel capabilities (aiueos.policy/default-kernel-caps
   ;; in aiueos-cljc-contract), registered per ADR-2607022700 so a `.kotoba`
