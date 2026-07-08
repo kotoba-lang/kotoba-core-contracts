@@ -43,7 +43,17 @@
                   ;; per-frame call after that, including this one, is
                   ;; genuinely synchronous per the WebGPU spec). Same module
                   ;; "kotoba" as everything above.
-                  "gpu/clear" 226}
+                  "gpu/clear" 226
+                  ;; Track B Phase 1 (ADR-2607078000): real f32 host-imports
+                  ;; (kotoba-lang/kotoba now supports :f32 params/results,
+                  ;; ADR-2607078000 Track B Phase 1's f32-compiler-support
+                  ;; commit) for orbital math (cos/sin) and the render-guest
+                  ;; loop (gpu-set-position/gpu-draw-frame). Same module
+                  ;; "kotoba" as everything above.
+                  "math/cos" 227
+                  "math/sin" 228
+                  "gpu/set-position" 229
+                  "gpu/draw-frame" 230}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -78,7 +88,11 @@
                      http-post
                      log-read
                      llm-infer
-                     gpu-clear]
+                     gpu-clear
+                     cos
+                     sin
+                     gpu-set-position
+                     gpu-draw-frame]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -251,4 +265,42 @@
                            :field "gpu_clear"
                            :capability "gpu/clear"
                            :params [:i32]
-                           :result :i32}}}
+                           :result :i32}
+                ;; cos/sin(radians: f32) -> f32. Real f32 in/out (not a
+                ;; fixed-point-i64 workaround) -- kotoba-lang/kotoba's
+                ;; compiler now supports :f32 host-import params/results
+                ;; natively (ADR-2607078000 Track B Phase 1).
+                cos {:module "kotoba"
+                     :field "cos"
+                     :capability "math/cos"
+                     :params [:f32]
+                     :result :f32}
+                sin {:module "kotoba"
+                     :field "sin"
+                     :capability "math/sin"
+                     :params [:f32]
+                     :result :f32}
+                ;; gpu-set-position(body-id, x, y, z) -> 0|-1. Host stores
+                ;; the position for that instance; the guest computes
+                ;; positions (via cos/sin orbital math) and calls this once
+                ;; per body per frame, then gpu-draw-frame issues the actual
+                ;; draw calls using every stored position. Deliberately
+                ;; scalar-only (not a guest-constructed matrix): kotoba-lang/
+                ;; kotoba has no vector/matrix type or loops-beyond-recursion
+                ;; yet, so the "guest computes, host renders" split keeps
+                ;; matrix/pipeline/camera mechanics host-side while the guest
+                ;; still genuinely drives what gets drawn where.
+                gpu-set-position {:module "kotoba"
+                                  :field "gpu_set_position"
+                                  :capability "gpu/set-position"
+                                  :params [:i32 :f32 :f32 :f32]
+                                  :result :i32}
+                ;; gpu-draw-frame() -> 0|-1. Synchronous (same
+                ;; createCommandEncoder -> beginRenderPass -> ... ->
+                ;; queue.submit sequence gpu-clear already proved works from
+                ;; a sync host-import).
+                gpu-draw-frame {:module "kotoba"
+                                :field "gpu_draw_frame"
+                                :capability "gpu/draw-frame"
+                                :params []
+                                :result :i32}}}
