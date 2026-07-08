@@ -1,5 +1,5 @@
 (ns kotoba.core.contracts-test
-  (:require [clojure.test :refer [deftest is run-tests]]
+  (:require [clojure.test :refer [deftest is run-tests testing]]
             [kotoba.core.contracts :as contracts]))
 
 (deftest source-contract-loads-and-classifies
@@ -36,6 +36,30 @@
     (is (thrown-with-msg?
          clojure.lang.ExceptionInfo #"unsupported Kotoba source extension"
          (contracts/source-plan contract "README.md")))))
+
+(deftest source-contract-rejects-further-drift
+  (testing "validate-source-contract's remaining branches -- previously
+            untested despite source-contract-rejects-drift above already
+            covering four of the seven. Each mutates one real, valid
+            contract just enough to trip exactly one problem, confirmed via
+            direct REPL calls before writing these assertions."
+    (let [contract (contracts/source-contract)]
+      (is (some #(= :missing-source-kinds (:problem %))
+                (contracts/validate-source-contract (dissoc contract :source-kinds))))
+      (is (some #(= :invalid-source-extensions (:problem %))
+                (contracts/validate-source-contract
+                 (assoc-in contract [:source-kinds :bad] {:extensions [] :reader-target :kotoba}))))
+      (is (some #(= :default-reader-target-not-source-kind (:problem %))
+                (contracts/validate-source-contract (assoc contract :default-reader-target :nope))))
+      (is (some #(= :missing-namespace-resolution (:problem %))
+                (contracts/validate-source-contract (dissoc contract :namespace-resolution))))
+      (is (some #(= :namespace-resolution-unknown-target (:problem %))
+                (contracts/validate-source-contract
+                 (assoc-in contract [:namespace-resolution :bogus-target] [".kotoba"]))))
+      (is (some #(= :unexpected-schema (:problem %))
+                (contracts/validate-source-contract (assoc contract :schema "bogus"))))
+      (is (some #(= :unexpected-authority (:problem %))
+                (contracts/validate-source-contract (assoc contract :authority "bogus")))))))
 
 (deftest capability-contract-loads-and-validates
   (let [contract (contracts/capability-contract)]
@@ -198,6 +222,33 @@
     (is (some #(= :invalid-special-forms (:problem %))
               (contracts/validate-capability-contract
                (assoc contract :special-forms [:do :let]))))))
+
+(deftest capability-contract-rejects-further-drift
+  (testing "validate-capability-contract's remaining branches -- previously
+            untested despite capability-contract-rejects-drift above already
+            covering five of the twelve. Each mutates one real, valid
+            contract just enough to trip exactly one problem, confirmed via
+            direct REPL calls before writing these assertions."
+    (let [contract (contracts/capability-contract)]
+      (is (some #(= :missing-capability-ids (:problem %))
+                (contracts/validate-capability-contract (dissoc contract :capability-ids))))
+      (is (some #(= :missing-host-imports (:problem %))
+                (contracts/validate-capability-contract (dissoc contract :host-imports))))
+      (is (some #(= :capability-id-keys-must-be-strings (:problem %))
+                (contracts/validate-capability-contract
+                 (assoc-in contract [:capability-ids :bogus-keyword] 999))))
+      (is (some #(= :capability-id-values-must-be-positive-ints (:problem %))
+                (contracts/validate-capability-contract
+                 (assoc-in contract [:capability-ids "bad/cap"] -1))))
+      (is (some #(= :invalid-host-import-order (:problem %))
+                (contracts/validate-capability-contract
+                 (assoc contract :host-import-order [1 2 3]))))
+      (is (some #(= :duplicate-host-import-order (:problem %))
+                (contracts/validate-capability-contract
+                 (update contract :host-import-order #(conj % (first %))))))
+      (is (some #(= :ordered-import-missing-definition (:problem %))
+                (contracts/validate-capability-contract
+                 (update contract :host-import-order conj 'totally-unbound-op)))))))
 
 (deftest all-contracts-validate
   (is (= [] (contracts/validate-all))))
