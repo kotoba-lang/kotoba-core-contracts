@@ -75,8 +75,43 @@
              topic-take topic-count pci-config dma-map irq-subscribe mmio-map
              gen-keypair sign verify sha256-hex http-post log-read llm-infer
              gpu-clear cos sin gpu-set-position gpu-draw-frame
-             now-days galactic-frame?]
+             now-days galactic-frame?
+             kami-tick-n kami-spawn kami-despawn
+             kami-set-position! kami-set-velocity! kami-get-x kami-get-y
+             kami-count-tagged kami-nearest-tagged
+             kami-move-tagged-toward! kami-despawn-within!
+             kami-axis kami-rand]
            (contracts/host-import-order contract)))))
+
+(deftest kami-engine-imports-registered
+  ;; kami-* game-engine ECS surface (one shared "kami/engine" capability,
+  ;; like "graph/kotoba" covering the kgraph-* quartet): the kami:engine
+  ;; vocabulary exposed through this contract's single (module "kotoba")
+  ;; ABI so a `.kotoba` guest can drive real game logic -- host owns entity
+  ;; state/integration/tick, guest computes (gpu-set-position precedent).
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (is (= 233 (contracts/capability-id contract "kami/engine")))
+    (doseq [[op [field params result]]
+            {'kami-tick-n ["kami_tick_n" [] :i32]
+             'kami-spawn ["kami_spawn" [:i32 :i32] :i32]
+             'kami-despawn ["kami_despawn" [:i32] :i32]
+             'kami-set-position! ["kami_set_position" [:i32 :f32 :f32] :i32]
+             'kami-set-velocity! ["kami_set_velocity" [:i32 :f32 :f32] :i32]
+             'kami-get-x ["kami_get_x" [:i32] :f32]
+             'kami-get-y ["kami_get_y" [:i32] :f32]
+             'kami-count-tagged ["kami_count_tagged" [:i32 :i32] :i32]
+             'kami-nearest-tagged ["kami_nearest_tagged" [:i32 :i32 :f32 :f32 :f32] :i32]
+             'kami-move-tagged-toward! ["kami_move_tagged_toward" [:i32 :i32 :f32 :f32 :f32] :i32]
+             'kami-despawn-within! ["kami_despawn_within" [:i32 :i32 :f32 :f32 :f32] :i32]
+             'kami-axis ["kami_axis" [:i32 :i32] :f32]
+             'kami-rand ["kami_rand" [:i32] :i32]}]
+      (let [import (get-in contract [:host-imports op])]
+        (is (= "kotoba" (:module import)) (str op))
+        (is (= "kami/engine" (:capability import)) (str op))
+        (is (= field (:field import)) (str op))
+        (is (= params (:params import)) (str op))
+        (is (= result (:result import)) (str op))))))
 
 (deftest kototama-actor-host-imports-registered
   ;; kotoba-lang/kototama's actor:host ABI (kototama.contract /
