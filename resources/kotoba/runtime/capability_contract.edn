@@ -64,7 +64,22 @@
                   ;; read a host-owned boolean (a page checkbox) to decide
                   ;; whether to apply the tilt+forward-drift transform.
                   "time/now-days" 231
-                  "render/galactic-frame" 232}
+                  "render/galactic-frame" 232
+                  ;; `kami-*` -- a minimal game-engine ECS surface (entity
+                  ;; spawn/despawn, position/velocity, tag queries, input
+                  ;; axis, seeded rand), the kami:engine vocabulary exposed
+                  ;; through THIS contract's single (module "kotoba") ABI so
+                  ;; a `.kotoba` guest can drive real game logic. Same
+                  ;; "guest computes, host executes" split as gpu-set-
+                  ;; position above: the host owns all entity state and
+                  ;; fixed-step integration, advances the tick counter, and
+                  ;; calls the guest's 0-arg `main` once per tick (no
+                  ;; guest-side loop); batch ops (move-tagged-toward!/
+                  ;; despawn-within!) stand in for per-entity iteration the
+                  ;; language deliberately doesn't have. One shared
+                  ;; capability for the whole family, like "graph/kotoba"
+                  ;; covering the kgraph-* quartet.
+                  "kami/engine" 233}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -105,7 +120,20 @@
                      gpu-set-position
                      gpu-draw-frame
                      now-days
-                     galactic-frame?]
+                     galactic-frame?
+                     kami-tick-n
+                     kami-spawn
+                     kami-despawn
+                     kami-set-position!
+                     kami-set-velocity!
+                     kami-get-x
+                     kami-get-y
+                     kami-count-tagged
+                     kami-nearest-tagged
+                     kami-move-tagged-toward!
+                     kami-despawn-within!
+                     kami-axis
+                     kami-rand]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -338,4 +366,99 @@
                                  :field "galactic_frame"
                                  :capability "render/galactic-frame"
                                  :params []
-                                 :result :i32}}}
+                                 :result :i32}
+                ;; kami-* game-engine ECS surface ("kami/engine" capability
+                ;; note above). Tags/axis names are (ptr,len) UTF-8 string
+                ;; arguments, same memory ABI as kgraph-*/http-*; positions/
+                ;; velocities/speeds/radii are :f32 scalars (gpu-set-position
+                ;; precedent); entity ids are :i32 handles, -1 = none/error.
+                ;; kami-tick-n() -> the host's tick counter (advanced by the
+                ;; host once per fixed step, before it calls `main` again).
+                kami-tick-n {:module "kotoba"
+                             :field "kami_tick_n"
+                             :capability "kami/engine"
+                             :params []
+                             :result :i32}
+                ;; kami-spawn(tag-ptr, tag-len) -> new entity id at (0,0).
+                kami-spawn {:module "kotoba"
+                            :field "kami_spawn"
+                            :capability "kami/engine"
+                            :params [:i32 :i32]
+                            :result :i32}
+                ;; kami-despawn(eid) -> 0|-1.
+                kami-despawn {:module "kotoba"
+                              :field "kami_despawn"
+                              :capability "kami/engine"
+                              :params [:i32]
+                              :result :i32}
+                ;; kami-set-position!(eid, x, y) -> 0|-1.
+                kami-set-position! {:module "kotoba"
+                                    :field "kami_set_position"
+                                    :capability "kami/engine"
+                                    :params [:i32 :f32 :f32]
+                                    :result :i32}
+                ;; kami-set-velocity!(eid, vx, vy) -> 0|-1 (units/second;
+                ;; the host integrates pos += vel * dt each fixed step).
+                kami-set-velocity! {:module "kotoba"
+                                    :field "kami_set_velocity"
+                                    :capability "kami/engine"
+                                    :params [:i32 :f32 :f32]
+                                    :result :i32}
+                ;; kami-get-x(eid)/kami-get-y(eid) -> the entity's current
+                ;; position component (0.0 for an unknown id -- the guest
+                ;; can pre-check with kami-nearest-tagged/count-tagged).
+                kami-get-x {:module "kotoba"
+                            :field "kami_get_x"
+                            :capability "kami/engine"
+                            :params [:i32]
+                            :result :f32}
+                kami-get-y {:module "kotoba"
+                            :field "kami_get_y"
+                            :capability "kami/engine"
+                            :params [:i32]
+                            :result :f32}
+                ;; kami-count-tagged(tag-ptr, tag-len) -> live entity count.
+                kami-count-tagged {:module "kotoba"
+                                   :field "kami_count_tagged"
+                                   :capability "kami/engine"
+                                   :params [:i32 :i32]
+                                   :result :i32}
+                ;; kami-nearest-tagged(tag-ptr, tag-len, x, y, max-dist)
+                ;; -> nearest tagged entity id within max-dist, or -1.
+                kami-nearest-tagged {:module "kotoba"
+                                     :field "kami_nearest_tagged"
+                                     :capability "kami/engine"
+                                     :params [:i32 :i32 :f32 :f32 :f32]
+                                     :result :i32}
+                ;; kami-move-tagged-toward!(tag-ptr, tag-len, x, y, speed)
+                ;; -> count of entities whose velocity was pointed at (x,y)
+                ;; at `speed`. Batch op: per-entity iteration stays host-
+                ;; side because the language has no loops beyond recursion.
+                kami-move-tagged-toward! {:module "kotoba"
+                                          :field "kami_move_tagged_toward"
+                                          :capability "kami/engine"
+                                          :params [:i32 :i32 :f32 :f32 :f32]
+                                          :result :i32}
+                ;; kami-despawn-within!(tag-ptr, tag-len, x, y, radius)
+                ;; -> count of tagged entities despawned within radius.
+                kami-despawn-within! {:module "kotoba"
+                                      :field "kami_despawn_within"
+                                      :capability "kami/engine"
+                                      :params [:i32 :i32 :f32 :f32 :f32]
+                                      :result :i32}
+                ;; kami-axis(name-ptr, name-len) -> host-owned input axis
+                ;; value in [-1.0, 1.0] (0.0 when unset), e.g. "MoveX".
+                kami-axis {:module "kotoba"
+                           :field "kami_axis"
+                           :capability "kami/engine"
+                           :params [:i32 :i32]
+                           :result :f32}
+                ;; kami-rand(n) -> uniform i32 in [0, n) from the host's
+                ;; SEEDED xorshift64 stream (deterministic replay -- same
+                ;; seed, same game; kami-engine-host.js precedent), never
+                ;; the OS RNG (that's random-bytes' job).
+                kami-rand {:module "kotoba"
+                           :field "kami_rand"
+                           :capability "kami/engine"
+                           :params [:i32]
+                           :result :i32}}}
