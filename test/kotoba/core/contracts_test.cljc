@@ -80,7 +80,8 @@
              kami-set-position! kami-set-velocity! kami-get-x kami-get-y
              kami-count-tagged kami-nearest-tagged
              kami-move-tagged-toward! kami-despawn-within!
-             kami-axis kami-rand]
+             kami-axis kami-rand
+             motion-read audio-play audio-record ble-scan wifi-info]
            (contracts/host-import-order contract)))))
 
 (deftest kami-engine-imports-registered
@@ -112,6 +113,32 @@
         (is (= field (:field import)) (str op))
         (is (= params (:params import)) (str op))
         (is (= result (:result import)) (str op))))))
+
+(deftest sensing-capability-imports-registered
+  ;; ADR-2607140600 Phase 3a device-capability bridge (iPhone sensing for
+  ;; the indoor floorplan-lab): 4 independently-metered/gateable
+  ;; capabilities registered through the same pipeline as kami/engine
+  ;; above -- each op has its OWN capability id (unlike kami-*'s one
+  ;; shared id), mirroring how kgraph-*/topic-* group multiple ops under
+  ;; one shared id vs. how most other ops get their own.
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (doseq [[cap id] {"motion/read" 234 "audio/io" 235 "ble/scan" 236 "wifi/info" 237}]
+      (is (= id (contracts/capability-id contract cap)) cap))
+    (doseq [[op [field capability params result]]
+            {'motion-read ["motion_read" "motion/read" [:i32 :i32] :i32]
+             'audio-play ["audio_play" "audio/io" [:i32 :i32] :i32]
+             'audio-record ["audio_record" "audio/io" [:i32 :i32 :i32] :i32]
+             'ble-scan ["ble_scan" "ble/scan" [:i32 :i32 :i32] :i32]
+             'wifi-info ["wifi_info" "wifi/info" [:i32 :i32] :i32]}]
+      (let [import (get-in contract [:host-imports op])]
+        (is (= "kotoba" (:module import)) (str op))
+        (is (= capability (:capability import)) (str op))
+        (is (= field (:field import)) (str op))
+        (is (= params (:params import)) (str op))
+        (is (= result (:result import)) (str op))))
+    (is (every? (set (contracts/host-import-order contract))
+                '[motion-read audio-play audio-record ble-scan wifi-info]))))
 
 (deftest kototama-actor-host-imports-registered
   ;; kotoba-lang/kototama's actor:host ABI (kototama.contract /
