@@ -79,7 +79,23 @@
                   ;; language deliberately doesn't have. One shared
                   ;; capability for the whole family, like "graph/kotoba"
                   ;; covering the kgraph-* quartet.
-                  "kami/engine" 233}
+                  "kami/engine" 233
+                  ;; ADR-2607140600 Phase 3a device-capability bridge (iPhone
+                  ;; sensing for the indoor floorplan-lab): 4 read-only, no
+                  ;; network-egress, individually-metered/gateable
+                  ;; capabilities, registered through the SAME pipeline
+                  ;; ADR-2607100030 established (kotoba-core-contracts
+                  ;; capability id -> kotoba-lang effect-for-kind -> kotoba
+                  ;; runtime op->kind/guarded-host-functions). Real hardware
+                  ;; access (CoreMotion/CoreBluetooth/AVAudioEngine) is
+                  ;; explicitly OUT of this ADR's scope -- these ids only
+                  ;; make the capabilities nameable/gateable from `.kotoba`
+                  ;; source and back a deterministic stub host, same as
+                  ;; aiueos's device-access quartet (ADR-2607030900).
+                  "motion/read" 234
+                  "audio/io" 235
+                  "ble/scan" 236
+                  "wifi/info" 237}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -133,7 +149,12 @@
                      kami-move-tagged-toward!
                      kami-despawn-within!
                      kami-axis
-                     kami-rand]
+                     kami-rand
+                     motion-read
+                     audio-play
+                     audio-record
+                     ble-scan
+                     wifi-info]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -461,4 +482,59 @@
                            :field "kami_rand"
                            :capability "kami/engine"
                            :params [:i32]
+                           :result :i32}
+                ;; ADR-2607140600 Phase 3a device-capability bridge -- 4
+                ;; read-only iPhone sensing capabilities for the indoor
+                ;; floorplan-lab. Same (out-ptr, out-cap) -> written-count-
+                ;; or-(-1)-on-overflow memory ABI log-read/fs-read already
+                ;; use (kotoba.wasm-exec/write-bytes!), so a guest that
+                ;; doesn't yet know the byte layout still gets a bounded,
+                ;; safe write instead of an unbounded one. Every op here is
+                ;; backed by a deterministic stub host in kotoba (no real
+                ;; CoreMotion/CoreBluetooth/AVAudioEngine access -- that
+                ;; native shim is explicitly out of this ADR's scope, same
+                ;; boundary aiueos draws around its device-access quartet).
+                ;;
+                ;; motion-read(out-ptr, out-cap) -> count of i32/f32 fixed-
+                ;; point samples written (accel x/y/z, gyro x/y/z, mag
+                ;; x/y/z = 9 values), or -1 if out-cap is too small. The
+                ;; stub always returns 0 (no driver injected).
+                motion-read {:module "kotoba"
+                             :field "motion_read"
+                             :capability "motion/read"
+                             :params [:i32 :i32]
+                             :result :i32}
+                ;; audio-play(freq-hz, duration-ms) -> 0 on success, -1 on
+                ;; failure. The stub always returns -1 (no driver injected,
+                ;; nothing was actually played).
+                audio-play {:module "kotoba"
+                            :field "audio_play"
+                            :capability "audio/io"
+                            :params [:i32 :i32]
+                            :result :i32}
+                ;; audio-record(duration-ms, out-ptr, out-cap) -> count of
+                ;; fixed-point PCM samples written, or -1 if out-cap is too
+                ;; small. The stub always returns 0 (no driver injected).
+                audio-record {:module "kotoba"
+                              :field "audio_record"
+                              :capability "audio/io"
+                              :params [:i32 :i32 :i32]
+                              :result :i32}
+                ;; ble-scan(duration-ms, out-ptr, out-cap) -> count of
+                ;; detected peripherals written as {id, rssi} pairs, or -1
+                ;; if out-cap is too small. The stub always returns 0 (no
+                ;; driver injected, no peripherals found).
+                ble-scan {:module "kotoba"
+                          :field "ble_scan"
+                          :capability "ble/scan"
+                          :params [:i32 :i32 :i32]
+                          :result :i32}
+                ;; wifi-info(out-ptr, out-cap) -> 0 = info unavailable
+                ;; (the iOS-constrained default -- no raw RSSI scan without
+                ;; special entitlements), 1 = info written to (out-ptr,
+                ;; out-cap). The stub always returns 0.
+                wifi-info {:module "kotoba"
+                           :field "wifi_info"
+                           :capability "wifi/info"
+                           :params [:i32 :i32]
                            :result :i32}}}
