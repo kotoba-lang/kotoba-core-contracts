@@ -7,13 +7,17 @@
     (is (= [] (contracts/validate-source-contract contract)))
     (is (= :kotoba (contracts/source-kind contract "src/app.kotoba")))
     (is (= :cljc (contracts/source-kind contract "src/shared.cljc")))
+    (is (= :cljk (contracts/source-kind contract "src/cell.cljk")))
     (is (= :cljs (contracts/source-kind contract "src/app.cljs")))
     (is (= :edn (contracts/source-kind contract "policy.edn")))
     (is (nil? (contracts/source-kind contract "README.md")))
     (is (= :kotoba (:kotoba.source/reader-target
                     (contracts/source-plan contract "src/shared.cljc"))))
+    (is (= [:kotoba] (get-in contract [:source-kinds :kotoba :reader-targets])))
     (is (= :cljs (:kotoba.source/reader-target
-                  (contracts/source-plan contract "src/app.cljs"))))))
+                  (contracts/source-plan contract "src/app.cljs"))))
+    (is (= :kotoba (:kotoba.source/reader-target
+                 (contracts/source-plan contract "src/cell.cljk"))))))
 
 (deftest source-contract-rejects-drift
   (let [contract (contracts/source-contract)]
@@ -78,6 +82,7 @@
              now-days galactic-frame?
              kami-tick-n kami-spawn kami-despawn
              kami-set-position! kami-set-velocity! kami-get-x kami-get-y
+             kami-set-position3! kami-set-velocity3! kami-get-z
              kami-count-tagged kami-nearest-tagged
              kami-move-tagged-toward! kami-despawn-within!
              kami-axis kami-rand
@@ -101,6 +106,9 @@
              'kami-set-velocity! ["kami_set_velocity" [:i32 :f32 :f32] :i32]
              'kami-get-x ["kami_get_x" [:i32] :f32]
              'kami-get-y ["kami_get_y" [:i32] :f32]
+             'kami-set-position3! ["kami_set_position3" [:i32 :f32 :f32 :f32] :i32]
+             'kami-set-velocity3! ["kami_set_velocity3" [:i32 :f32 :f32 :f32] :i32]
+             'kami-get-z ["kami_get_z" [:i32] :f32]
              'kami-count-tagged ["kami_count_tagged" [:i32 :i32] :i32]
              'kami-nearest-tagged ["kami_nearest_tagged" [:i32 :i32 :f32 :f32 :f32] :i32]
              'kami-move-tagged-toward! ["kami_move_tagged_toward" [:i32 :i32 :f32 :f32 :f32] :i32]

@@ -144,6 +144,9 @@
                      kami-set-velocity!
                      kami-get-x
                      kami-get-y
+                     kami-set-position3!
+                     kami-set-velocity3!
+                     kami-get-z
                      kami-count-tagged
                      kami-nearest-tagged
                      kami-move-tagged-toward!
@@ -435,6 +438,24 @@
                             :result :f32}
                 kami-get-y {:module "kotoba"
                             :field "kami_get_y"
+                            :capability "kami/engine"
+                            :params [:i32]
+                            :result :f32}
+                ;; Additive 3D ABI. The 2D fields above remain stable; guests
+                ;; select these imports only for explicit (x,y,z)/(vx,vy,vz)
+                ;; forms, so a z component is never silently discarded.
+                kami-set-position3! {:module "kotoba"
+                                     :field "kami_set_position3"
+                                     :capability "kami/engine"
+                                     :params [:i32 :f32 :f32 :f32]
+                                     :result :i32}
+                kami-set-velocity3! {:module "kotoba"
+                                     :field "kami_set_velocity3"
+                                     :capability "kami/engine"
+                                     :params [:i32 :f32 :f32 :f32]
+                                     :result :i32}
+                kami-get-z {:module "kotoba"
+                            :field "kami_get_z"
                             :capability "kami/engine"
                             :params [:i32]
                             :result :f32}
