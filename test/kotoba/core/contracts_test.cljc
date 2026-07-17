@@ -13,6 +13,7 @@
     (is (nil? (contracts/source-kind contract "README.md")))
     (is (= :kotoba (:kotoba.source/reader-target
                     (contracts/source-plan contract "src/shared.cljc"))))
+    (is (= [:kotoba] (get-in contract [:source-kinds :kotoba :reader-targets])))
     (is (= :cljs (:kotoba.source/reader-target
                   (contracts/source-plan contract "src/app.cljs"))))
     (is (= :kotoba (:kotoba.source/reader-target

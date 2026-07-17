@@ -4,7 +4,7 @@
  :authority "kotoba-lang/kotoba-core-contracts"
  :source-kinds {:kotoba {:extensions [".kotoba"]
                          :reader-target :kotoba
-                         :reader-targets [:kotoba :cljs]
+                         :reader-targets [:kotoba]
                          :canonical? true
                          :safe-gate-required? true}
                 :clj {:extensions [".clj"]
@@ -39,5 +39,5 @@
                    :eval "compile-and-run through source contract, not unrestricted host eval"
                    :cljc "evaluate with explicit reader target; default target is :kotoba"
                    :cljk "CLJ Kotoba source compiled by the Kotoba/Kototama compiler"
-                   :web ".kotoba is read and compiled with the :cljs target for web output"
+                   :web ".kotoba uses the Kotoba frontend and checked KIR -> kotoba-script for web output; .cljs remains ClojureScript"
                    :safety "all executable source kinds pass safe analyzer facts and capability policy"}}
