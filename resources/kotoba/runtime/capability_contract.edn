@@ -95,7 +95,17 @@
                   "motion/read" 234
                   "audio/io" 235
                   "ble/scan" 236
-                  "wifi/info" 237}
+                  "wifi/info" 237
+                  ;; Bounded component transport ABI. Handles are opaque i64
+                  ;; values; no file descriptor or syscall number crosses the
+                  ;; component boundary.
+                  "net/connect" 238
+                  "crypto/tls" 239
+                  "net/transport" 240
+                  "component/http" 241
+                  "component/database" 242
+                  "secret/use-scram-sha256" 243
+                  "secret/use-postgresql-cancel" 244}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -103,6 +113,54 @@
                      clipboard-write
                      clipboard-write-str
                      http-fetch
+                     transport-connect
+                     tls-open
+                     tls-server-end-point
+                     transport-write
+                     transport-read
+                     transport-close
+                     http-open
+                     http-write
+                     http-read
+                     http-close
+                     http-get
+                     db-open
+                     db-write
+                     db-read
+                     db-close
+                     db-exchange
+                     pg-simple-query
+                     pg-open
+                     pg-query
+                     pg-query-state
+                     pg-prepare
+                     pg-prepare-typed
+                     pg-execute-params2
+                     pg-execute-params
+                     pg-bind-portal
+                     pg-fetch-portal
+                     pg-close-portal
+                     pg-copy-out
+                     pg-copy-in
+                     pg-execute-batch
+                     pg-session-reset
+                     pg-pool-open
+                     pg-pool-acquire
+                     pg-pool-query
+                     pg-pool-release
+                     pg-pool-stats
+                     pg-pool-health
+                     pg-pool-drain
+                     pg-pool-close
+                     pg-close-statement
+                     pg-open-scram
+                     pg-open-scram-random
+                     pg-open-scram-cancellable-random
+                     pg-cancel-authority-use
+                     pg-close-scram
+                     scram-sha256
+                     pg-cancel-register
+                     pg-cancel
                      keychain-read
                      keychain-write
                      fs-read
@@ -187,6 +245,211 @@
                             :capability "http/fetch"
                             :params [:i32 :i32 :i32 :i32]
                             :result :i32}
+                transport-connect {:module "kotoba"
+                                   :field "transport_connect"
+                                   :capability "net/connect"
+                                   :params [:i32 :i32 :i32]
+                                   :result :i64}
+                tls-open {:module "kotoba"
+                          :field "tls_open"
+                          :capability "crypto/tls"
+                          :params [:i64 :i32 :i32]
+                          :result :i64}
+                tls-server-end-point
+                {:module "kotoba"
+                 :field "tls_server_end_point"
+                 :capability "crypto/tls"
+                 :params [:i64 :i32 :i32]
+                 :result :i32}
+                transport-write {:module "kotoba"
+                                 :field "transport_write"
+                                 :capability "net/transport"
+                                 :params [:i64 :i32 :i32]
+                                 :result :i32}
+                transport-read {:module "kotoba"
+                                :field "transport_read"
+                                :capability "net/transport"
+                                :params [:i64 :i32 :i32]
+                                :result :i32}
+                transport-close {:module "kotoba"
+                                 :field "transport_close"
+                                 :capability "net/transport"
+                                 :params [:i64]
+                                 :result :i32}
+                http-open {:module "kotoba" :field "http_open"
+                           :capability "component/http"
+                           :params [:i32 :i32 :i32] :result :i64}
+                http-write {:module "kotoba" :field "http_write"
+                            :capability "component/http"
+                            :params [:i64 :i32 :i32] :result :i32}
+                http-read {:module "kotoba" :field "http_read"
+                           :capability "component/http"
+                           :params [:i64 :i32 :i32] :result :i32}
+                http-close {:module "kotoba" :field "http_close"
+                            :capability "component/http"
+                            :params [:i64] :result :i32}
+                http-get {:module "kotoba" :field "http_get"
+                          :capability "component/http"
+                          :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                          :result :i32}
+                db-open {:module "kotoba" :field "db_open"
+                         :capability "component/database"
+                         :params [:i32 :i32 :i32] :result :i64}
+                db-write {:module "kotoba" :field "db_write"
+                          :capability "component/database"
+                          :params [:i64 :i32 :i32] :result :i32}
+                db-read {:module "kotoba" :field "db_read"
+                         :capability "component/database"
+                         :params [:i64 :i32 :i32] :result :i32}
+                db-close {:module "kotoba" :field "db_close"
+                          :capability "component/database"
+                          :params [:i64] :result :i32}
+                db-exchange {:module "kotoba" :field "db_exchange"
+                             :capability "component/database"
+                             :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                             :result :i32}
+                pg-simple-query {:module "kotoba" :field "pg_simple_query"
+                                 :capability "component/database"
+                                 :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                                 :result :i32}
+                pg-open {:module "kotoba" :field "pg_open"
+                         :capability "component/database"
+                         :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                         :result :i64}
+                pg-query {:module "kotoba" :field "pg_query"
+                          :capability "component/database"
+                          :params [:i64 :i32 :i32 :i32 :i32]
+                          :result :i32}
+                pg-query-state
+                {:module "kotoba" :field "pg_query_state"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-prepare
+                {:module "kotoba" :field "pg_prepare"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-prepare-typed
+                {:module "kotoba" :field "pg_prepare_typed"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32 :i32
+                          :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-execute-params2
+                {:module "kotoba" :field "pg_execute_params2"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-execute-params
+                {:module "kotoba" :field "pg_execute_params"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-bind-portal
+                {:module "kotoba" :field "pg_bind_portal"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-fetch-portal
+                {:module "kotoba" :field "pg_fetch_portal"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-close-portal
+                {:module "kotoba" :field "pg_close_portal"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-copy-out
+                {:module "kotoba" :field "pg_copy_out"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-copy-in
+                {:module "kotoba" :field "pg_copy_in"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-execute-batch
+                {:module "kotoba" :field "pg_execute_batch"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-session-reset
+                {:module "kotoba" :field "pg_session_reset"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-pool-open
+                {:module "kotoba" :field "pg_pool_open"
+                 :capability "component/database"
+                 :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-pool-acquire
+                {:module "kotoba" :field "pg_pool_acquire"
+                 :capability "component/database" :params [:i32] :result :i32}
+                pg-pool-query
+                {:module "kotoba" :field "pg_pool_query"
+                 :capability "component/database"
+                 :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-pool-release
+                {:module "kotoba" :field "pg_pool_release"
+                 :capability "component/database" :params [:i32] :result :i32}
+                pg-pool-stats
+                {:module "kotoba" :field "pg_pool_stats"
+                 :capability "component/database" :params [:i32 :i32 :i32]
+                 :result :i32}
+                pg-pool-health
+                {:module "kotoba" :field "pg_pool_health"
+                 :capability "component/database" :params [:i32] :result :i32}
+                pg-pool-drain
+                {:module "kotoba" :field "pg_pool_drain"
+                 :capability "component/database" :params [:i32] :result :i32}
+                pg-pool-close
+                {:module "kotoba" :field "pg_pool_close"
+                 :capability "component/database" :params [:i32] :result :i32}
+                pg-close-statement
+                {:module "kotoba" :field "pg_close_statement"
+                 :capability "component/database"
+                 :params [:i64 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i32}
+                pg-open-scram {:module "kotoba" :field "pg_open_scram"
+                               :capability "component/database"
+                               :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32
+                                        :i32 :i32 :i32 :i32]
+                               :result :i64}
+                pg-open-scram-random
+                {:module "kotoba" :field "pg_open_scram_random"
+                 :capability "component/database"
+                 :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                 :result :i64}
+                pg-open-scram-cancellable-random
+                {:module "kotoba" :field "pg_open_scram_cancellable_random"
+                 :capability "component/database"
+                 :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32
+                          :i32 :i32]
+                 :result :i64}
+                pg-cancel-authority-use
+                {:module "kotoba" :field "pg_cancel_authority_use"
+                 :capability "component/database"
+                 :params [:i32] :result :i32}
+                pg-close-scram {:module "kotoba" :field "pg_close_scram"
+                                :capability "component/database"
+                                :params [:i64] :result :i32}
+                scram-sha256 {:module "kotoba" :field "scram_sha256"
+                              :capability "secret/use-scram-sha256"
+                              :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                              :result :i32}
+                pg-cancel-register
+                {:module "kotoba" :field "pg_cancel_register"
+                 :capability "secret/use-postgresql-cancel"
+                 :params [:i64 :i32 :i32] :result :i32}
+                pg-cancel
+                {:module "kotoba" :field "pg_cancel"
+                 :capability "secret/use-postgresql-cancel"
+                 :params [:i32] :result :i32}
                 keychain-read {:module "kotoba"
                                :field "keychain_read"
                                :capability "keychain/text"
