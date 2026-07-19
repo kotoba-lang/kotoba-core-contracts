@@ -72,7 +72,24 @@
     (is (= 204 (contracts/capability-id contract "clipboard/text")))
     (is (= "http_fetch" (get-in contract [:host-imports 'http-fetch :field])))
     (is (= '[has-capability? notify-show clipboard-read clipboard-write
-             clipboard-write-str http-fetch keychain-read keychain-write
+             clipboard-write-str http-fetch
+             transport-connect tls-open tls-server-end-point
+             transport-write transport-read transport-close
+             http-open http-write http-read http-close http-get
+             db-open db-write db-read db-close db-exchange pg-simple-query pg-open pg-query pg-query-state
+             pg-prepare pg-prepare-typed pg-execute-params2 pg-execute-params
+             pg-bind-portal pg-fetch-portal pg-close-portal
+             pg-copy-out pg-copy-in
+             pg-execute-batch
+             pg-session-reset
+             pg-pool-open pg-pool-acquire pg-pool-query pg-pool-release
+             pg-pool-stats pg-pool-health pg-pool-drain
+             pg-pool-close
+             pg-close-statement
+             pg-open-scram pg-open-scram-random
+             pg-open-scram-cancellable-random pg-cancel-authority-use
+             pg-close-scram scram-sha256 pg-cancel-register pg-cancel
+             keychain-read keychain-write
              fs-read fs-write host-i64-roundtrip
              kgraph-assert! kgraph-retract! kgraph-get-objects kgraph-query
              log-write clock-monotonic random-bytes topic-publish topic-poll
