@@ -90,7 +90,7 @@
              pg-open-scram-cancellable-random pg-cancel-authority-use
              pg-close-scram scram-sha256 pg-cancel-register pg-cancel
              keychain-read keychain-write
-             fs-read fs-write host-i64-roundtrip
+             fs-read fs-write fs-write-atomic host-i64-roundtrip
              kgraph-assert! kgraph-retract! kgraph-get-objects kgraph-query
              log-write clock-monotonic random-bytes topic-publish topic-poll
              topic-take topic-count pci-config dma-map irq-subscribe mmio-map
