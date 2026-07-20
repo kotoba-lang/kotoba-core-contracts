@@ -165,6 +165,7 @@
                      keychain-write
                      fs-read
                      fs-write
+                     fs-write-atomic
                      host-i64-roundtrip
                      kgraph-assert!
                      kgraph-retract!
@@ -470,6 +471,11 @@
                           :capability "fs/app-data"
                           :params [:i32 :i32 :i32 :i32]
                           :result :i32}
+                fs-write-atomic {:module "kotoba"
+                                 :field "fs_write_atomic"
+                                 :capability "fs/app-data"
+                                 :params [:i32 :i32 :i32 :i32]
+                                 :result :i32}
                 host-i64-roundtrip {:module "kotoba"
                                     :field "host_i64_roundtrip"
                                     :capability "ledger/append"
