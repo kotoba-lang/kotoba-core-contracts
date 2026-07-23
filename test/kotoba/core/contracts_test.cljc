@@ -104,7 +104,7 @@
              kami-move-tagged-toward! kami-despawn-within!
              kami-axis kami-rand
              motion-read audio-play audio-record ble-scan wifi-info
-             cbor-encode json-encode json-extract-field]
+             cbor-encode json-encode json-extract-field http-post-headers]
            (contracts/host-import-order contract)))))
 
 (deftest kami-engine-imports-registered
@@ -210,6 +210,24 @@
       (is (= "kotoba" (get-in contract [:host-imports op :module])) op)
       (is (= params (get-in contract [:host-imports op :params])) op)
       (is (= :i32 (get-in contract [:host-imports op :result])) op))))
+
+(deftest http-post-headers-host-import-registered
+  ;; kototama.tender's actor:host ABI, THIRD wave (com-junkawasaki/root, this
+  ;; ADR): a SEPARATE host-import name from `http-post` (arity can't change
+  ;; on an already-compiled guest's import), but the SAME "http/post"
+  ;; capability id 223 -- this is the same operation (POST) with one added
+  ;; guest-supplied input (custom headers), not a new one.
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (is (= 223 (contracts/capability-id contract "http/post")))
+    (is (= "http/post" (get-in contract [:host-imports 'http-post-headers :capability]))
+        "reuses http-post's capability id, does not register a new one")
+    (is (= "http_post_headers" (get-in contract [:host-imports 'http-post-headers :field])))
+    (is (= "kotoba" (get-in contract [:host-imports 'http-post-headers :module])))
+    (is (= [:i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+           (get-in contract [:host-imports 'http-post-headers :params]))
+        "url(ptr,len) body(ptr,len) headers(ptr,len) out(ptr,cap) -- http-post's 6 plus 2 for headers")
+    (is (= :i32 (get-in contract [:host-imports 'http-post-headers :result])))))
 
 (deftest llm-infer-host-import-registered
   ;; kototama.tender's Anthropic Messages API call, registered net-new
