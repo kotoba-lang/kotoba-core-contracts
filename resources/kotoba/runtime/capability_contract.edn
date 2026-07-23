@@ -129,7 +129,26 @@
                   ;; key here would in fact be a hard EDN reader error
                   ;; (duplicate map key), not just redundant.
                   "data/cbor" 245
-                  "data/json" 246}
+                  "data/json" 246
+                  ;; kotoba-lang/kototama's actor:host ABI, THIRD wave
+                  ;; (com-junkawasaki/root ADR-2607231022's Phase A left this
+                  ;; as an explicit follow-up, closed here): `http_post`
+                  ;; itself cannot grow a headers parameter without breaking
+                  ;; every ALREADY-COMPILED `.kotoba` guest that imports it
+                  ;; (a Wasm import's arity is part of the compiled binary's
+                  ;; own import section -- changing it is not
+                  ;; backward-compatible the way adding a NEW host-import
+                  ;; name is). "http_post_headers" is a SEPARATE host-import
+                  ;; name for the SAME operation (POST) with one added
+                  ;; guest-supplied input (custom request headers, e.g.
+                  ;; `Authorization: Bearer <token>`), so it reuses this
+                  ;; table's pre-existing "http/post" capability id 223
+                  ;; rather than registering a new one -- same "same
+                  ;; operation, don't duplicate the capability id" choice
+                  ;; this file's own `http/fetch` reuse (see that entry's
+                  ;; comment above) and kototama's `log-write`/
+                  ;; `clock-monotonic` naming already made.
+                  }
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -243,7 +262,8 @@
                      wifi-info
                      cbor-encode
                      json-encode
-                     json-extract-field]
+                     json-extract-field
+                     http-post-headers]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -874,6 +894,23 @@
                 ;; callers that hand it real Clojure data directly), but
                 ;; this guest-facing entry point only ever feeds it a flat
                 ;; string->string map.
+                ;;
+                ;; ADR-2607231022 Phase A note above was later extended
+                ;; in-place (com-junkawasaki/root, this wave -- NO new
+                ;; capability id or host-import needed): a key segment MAY
+                ;; be dot-separated ("s.t", "resources.0", "p.resources.0")
+                ;; to address one level of OBJECT/ARRAY nesting -- a
+                ;; numeric segment ("0", "1", ...) selects an array
+                ;; position, any other segment selects an object field. A
+                ;; key with no dot is unchanged from before (this is a
+                ;; strict superset of the wire format, not a replacement --
+                ;; every EXISTING flat/dot-free caller is byte-for-byte
+                ;; unaffected). This ABI shape (params/result below) is
+                ;; UNCHANGED by that extension -- only kototama.tender's
+                ;; interpretation of the (ptr,len) input bytes grew, which
+                ;; is why no new id/host-import was needed here the way
+                ;; `http-post-headers` below needed one (that change grew
+                ;; the guest-facing PARAMETER ARITY, this one didn't).
                 cbor-encode {:module "kotoba"
                              :field "cbor_encode"
                              :capability "data/cbor"
@@ -881,8 +918,10 @@
                              :result :i32}
                 ;; json-encode(pairs-ptr, pairs-len, out-ptr, out-cap) ->
                 ;; bytes-written|-1. Same flat pairs wire format as
-                ;; cbor-encode; encodes as a JSON object of string keys to
-                ;; string values, e.g. for an XRPC request body.
+                ;; cbor-encode (including the dotted-path nesting extension
+                ;; noted above); encodes as a JSON object of string keys to
+                ;; string/object/array values, e.g. for an XRPC request
+                ;; body.
                 json-encode {:module "kotoba"
                              :field "json_encode"
                              :capability "data/json"
@@ -900,4 +939,27 @@
                                     :field "json_extract_field"
                                     :capability "data/json"
                                     :params [:i32 :i32 :i32 :i32 :i32 :i32]
-                                    :result :i32}}}
+                                    :result :i32}
+                ;; kototama actor:host ABI, THIRD wave (com-junkawasaki/root,
+                ;; this ADR) -- see this file's `data/cbor`/`data/json`
+                ;; section comment above for why this is a NEW host-import
+                ;; name rather than a change to `http-post`'s own arity.
+                ;;
+                ;; http-post-headers(url-ptr, url-len, body-ptr, body-len,
+                ;; headers-ptr, headers-len, out-ptr, out-cap) ->
+                ;; bytes-written|-1. Same synchronous POST semantics as
+                ;; `http-post` above (guest calls block on it; same SSRF/DoS
+                ;; hardening; reuses the SAME "http/post" capability id 223
+                ;; -- this is the same operation, not a new one), with one
+                ;; added guest-supplied input: HEADERS is the SAME flat
+                ;; key<TAB>value, LF-separated pairs wire format
+                ;; `cbor-encode`/`json-encode` already use (reused here
+                ;; as-is -- a header block is inherently flat, so it never
+                ;; needed the dotted-path nesting extension those two
+                ;; capabilities gained), e.g. "Authorization\tBearer
+                ;; <token>" for `com.atproto.repo.createRecord`.
+                http-post-headers {:module "kotoba"
+                                   :field "http_post_headers"
+                                   :capability "http/post"
+                                   :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
+                                   :result :i32}}}
