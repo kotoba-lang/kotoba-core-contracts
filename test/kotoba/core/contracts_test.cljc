@@ -103,7 +103,8 @@
              kami-count-tagged kami-nearest-tagged
              kami-move-tagged-toward! kami-despawn-within!
              kami-axis kami-rand
-             motion-read audio-play audio-record ble-scan wifi-info]
+             motion-read audio-play audio-record ble-scan wifi-info
+             cbor-encode json-encode json-extract-field]
            (contracts/host-import-order contract)))))
 
 (deftest kami-engine-imports-registered
@@ -187,6 +188,28 @@
       (is (= cap (get-in contract [:host-imports op :capability])) op)
       (is (= field (get-in contract [:host-imports op :field])) op)
       (is (= "kotoba" (get-in contract [:host-imports op :module])) op))))
+
+(deftest kototama-cbor-json-imports-registered
+  ;; kotoba-lang/kototama's actor:host ABI, second wave
+  ;; (com-junkawasaki/root ADR-2607230943): CBOR/JSON wire-format encoding
+  ;; for a future news-collecting fleet actor. All 3 net-new here (the
+  ;; wave's third capability, GET-only HTTP fetch, deliberately reuses the
+  ;; pre-existing "http/fetch" id 205 / `http-fetch` import instead --
+  ;; see that entry's own comment above `data/cbor` in the EDN resource).
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (doseq [[cap id] {"data/cbor" 245 "data/json" 246}]
+      (is (= id (contracts/capability-id contract cap)) cap))
+    (doseq [[op [cap field params]]
+            {'cbor-encode ["data/cbor" "cbor_encode" [:i32 :i32 :i32 :i32]]
+             'json-encode ["data/json" "json_encode" [:i32 :i32 :i32 :i32]]
+             'json-extract-field ["data/json" "json_extract_field"
+                                  [:i32 :i32 :i32 :i32 :i32 :i32]]}]
+      (is (= cap (get-in contract [:host-imports op :capability])) op)
+      (is (= field (get-in contract [:host-imports op :field])) op)
+      (is (= "kotoba" (get-in contract [:host-imports op :module])) op)
+      (is (= params (get-in contract [:host-imports op :params])) op)
+      (is (= :i32 (get-in contract [:host-imports op :result])) op))))
 
 (deftest llm-infer-host-import-registered
   ;; kototama.tender's Anthropic Messages API call, registered net-new

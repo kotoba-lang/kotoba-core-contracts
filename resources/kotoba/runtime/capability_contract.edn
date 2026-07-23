@@ -105,7 +105,31 @@
                   "component/http" 241
                   "component/database" 242
                   "secret/use-scram-sha256" 243
-                  "secret/use-postgresql-cancel" 244}
+                  "secret/use-postgresql-cancel" 244
+                  ;; kotoba-lang/kototama's actor:host ABI, second wave
+                  ;; (com-junkawasaki/root ADR-2607230943): CBOR/JSON wire-
+                  ;; format encoding for a future news-collecting fleet actor
+                  ;; (kawaraban/cloud-itonami) that needs to build CACAO
+                  ;; token bytes and XRPC request/response bodies from
+                  ;; within a `.kotoba` guest. Same module "kotoba" as
+                  ;; every other kototama entry above.
+                  ;;
+                  ;; NOTE: this wave's THIRD capability, GET-only HTTP
+                  ;; fetch, is deliberately NOT a new id here -- id 205
+                  ;; "http/fetch" already exists (registered for
+                  ;; `kotoba wasm emit`'s own kernel-capability vocabulary,
+                  ;; `kotoba.wasm-exec/real-host-functions`'s `http-fetch`)
+                  ;; with the exact (url-ptr url-len out-ptr out-cap) -> i32
+                  ;; shape kototama needs. kototama simply becomes a SECOND
+                  ;; host implementing that already-contracted capability --
+                  ;; the same "reuse, don't duplicate" choice this file's
+                  ;; own `log/write`/`clock/monotonic` entries already made
+                  ;; for kototama (see kototama.tender's namespace
+                  ;; docstring). Registering a second, colliding "http/fetch"
+                  ;; key here would in fact be a hard EDN reader error
+                  ;; (duplicate map key), not just redundant.
+                  "data/cbor" 245
+                  "data/json" 246}
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
                      notify-show
@@ -216,7 +240,10 @@
                      audio-play
                      audio-record
                      ble-scan
-                     wifi-info]
+                     wifi-info
+                     cbor-encode
+                     json-encode
+                     json-extract-field]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -827,4 +854,50 @@
                            :field "wifi_info"
                            :capability "wifi/info"
                            :params [:i32 :i32]
-                           :result :i32}}}
+                           :result :i32}
+                ;; kototama actor:host ABI, second wave (com-junkawasaki/root
+                ;; ADR-2607230943). cbor-encode/json-encode/json-extract-field
+                ;; all take a guest-built FLAT wire buffer -- key<TAB>value
+                ;; pairs, one pair per LF-separated line -- rather than any
+                ;; nested/generic encoding, since `.kotoba` guests can only
+                ;; build byte buffers by string concatenation (no map/vector
+                ;; literals). The (ptr,len)-in/(out-ptr,out-cap)-out shape
+                ;; matches every other kototama entry above.
+                ;;
+                ;; cbor-encode(pairs-ptr, pairs-len, out-ptr, out-cap) ->
+                ;; bytes-written|-1. Encodes the parsed pairs as a
+                ;; definite-length CBOR map (major type 5) of UTF-8 string
+                ;; keys (major type 3) to UTF-8 string values -- the
+                ;; kototama.tender implementation ports cacao.clj's general
+                ;; cbor-head/cbor-val encoder (which also supports
+                ;; sequential/array values, major type 4, for JVM-side
+                ;; callers that hand it real Clojure data directly), but
+                ;; this guest-facing entry point only ever feeds it a flat
+                ;; string->string map.
+                cbor-encode {:module "kotoba"
+                             :field "cbor_encode"
+                             :capability "data/cbor"
+                             :params [:i32 :i32 :i32 :i32]
+                             :result :i32}
+                ;; json-encode(pairs-ptr, pairs-len, out-ptr, out-cap) ->
+                ;; bytes-written|-1. Same flat pairs wire format as
+                ;; cbor-encode; encodes as a JSON object of string keys to
+                ;; string values, e.g. for an XRPC request body.
+                json-encode {:module "kotoba"
+                             :field "json_encode"
+                             :capability "data/json"
+                             :params [:i32 :i32 :i32 :i32]
+                             :result :i32}
+                ;; json-extract-field(json-ptr, json-len, field-ptr,
+                ;; field-len, out-ptr, out-cap) -> bytes-written|-1. NOT a
+                ;; general JSON parser -- a bounded string scan for a
+                ;; `"field":"value"` occurrence (optional whitespace after
+                ;; the colon, `\"`/`\\` un-escaped in the extracted value),
+                ;; e.g. pulling `accessJwt`/`uri`/`cid` out of an XRPC
+                ;; response body. -1 when the field isn't found as a
+                ;; string-valued key.
+                json-extract-field {:module "kotoba"
+                                    :field "json_extract_field"
+                                    :capability "data/json"
+                                    :params [:i32 :i32 :i32 :i32 :i32 :i32]
+                                    :result :i32}}}
