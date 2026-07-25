@@ -104,7 +104,11 @@
              kami-move-tagged-toward! kami-despawn-within!
              kami-axis kami-rand
              motion-read audio-play audio-record ble-scan wifi-info
-             cbor-encode json-encode json-extract-field http-post-headers]
+             cbor-encode json-encode json-extract-field http-post-headers
+             ;; web-wide crawl (com-junkawasaki/root ADR-2607252400)。
+             ;; **必ず末尾**であることがこのテストの意味 — 途中に挿入すると
+             ;; 既にビルド済みの .wasm の import index が全部ずれる。
+             cc-cdx-query cc-warc-extract corpus-append corpus-publish]
            (contracts/host-import-order contract)))))
 
 (deftest kami-engine-imports-registered

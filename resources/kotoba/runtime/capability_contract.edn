@@ -148,6 +148,26 @@
                   ;; this file's own `http/fetch` reuse (see that entry's
                   ;; comment above) and kototama's `log-write`/
                   ;; `clock-monotonic` naming already made.
+                  
+                  ;; --- web-wide crawl capabilities (com-junkawasaki/root
+                  ;; ADR-2607252400). 道具ではなく *意図* を capability にする:
+                  ;; `shell-exec("datalad" ...)` のような汎用コマンド実行を足すと、
+                  ;; それを持つ guest が任意 repo に push でき任意ファイルを読めて
+                  ;; deny-by-default が無意味になる (ADR-2607201300 が禁じる形)。
+                  ;; host は判断を含まない機構だけを所有し、判断は .kotoba 側:
+                  ;; どのパターンを何ページ目から引くか / どのレコードを採るか /
+                  ;; いつ publish するか、は guest が決める。
+                  ;;
+                  ;; 大きいデータ (WARC 本文は 250KB 級) は境界を越えさせない。
+                  ;; `cc/warc-extract` は CID + 有界サマリだけを返し、実体は host が
+                  ;; 保持する。Component Model の 65,536 バイト上限 (compiler
+                  ;; ADR 0041) を上げないのは、固定 3x64KiB ページ + bump
+                  ;; allocator + post-return reset が保証する「メモリ使用量が
+                  ;; 入力に依らず静的に有界」を捨てないため。
+                  "cc/cdx-query" 247
+                  "cc/warc-extract" 248
+                  "corpus/append" 249
+                  "corpus/publish" 250
                   }
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
@@ -263,7 +283,11 @@
                      cbor-encode
                      json-encode
                      json-extract-field
-                     http-post-headers]
+                     http-post-headers
+  ;; --- web-wide crawl (ADR-2607252400). 既存 import の序数を動かさないよう
+  ;; 必ず末尾に足す — 途中挿入は既存 .wasm の import index を全部ずらす。
+  cc-cdx-query cc-warc-extract corpus-append corpus-publish
+  ]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
                                  :params [:i32]
@@ -962,4 +986,35 @@
                                    :field "http_post_headers"
                                    :capability "http/post"
                                    :params [:i32 :i32 :i32 :i32 :i32 :i32 :i32 :i32]
-                                   :result :i32}}}
+                                   :result :i32}
+                ;; --- web-wide crawl (ADR-2607252400) ---
+                ;; いずれも string-head: 先頭2引数は UTF-8 (ptr,len)。
+                ;; 戻り値は i32 = host が発行する不透明ハンドル/件数で、
+                ;; 250KB 級の本文は guest に渡さない (CID 経由)。
+                cc-cdx-query {:module "kotoba"
+                              :field "cc_cdx_query"
+                              :capability "cc/cdx-query"
+                              ;; (pattern-ptr pattern-len page limit out-ptr out-cap)
+                              :params [:i32 :i32 :i32 :i32 :i32 :i32]
+                              :result :i32}
+                cc-warc-extract {:module "kotoba"
+                                 :field "cc_warc_extract"
+                                 :capability "cc/warc-extract"
+                                 ;; (warc-ptr warc-len offset length out-ptr out-cap)
+                                 ;; out には {cid,count,host,currency,format} の
+                                 ;; 有界サマリだけが書かれる。本文は host が保持。
+                                 :params [:i32 :i32 :i64 :i64 :i32 :i32]
+                                 :result :i32}
+                corpus-append {:module "kotoba"
+                               :field "corpus_append"
+                               :capability "corpus/append"
+                               ;; (target-ptr target-len cid-ptr cid-len)
+                               :params [:i32 :i32 :i32 :i32]
+                               :result :i32}
+                corpus-publish {:module "kotoba"
+                                :field "corpus_publish"
+                                :capability "corpus/publish"
+                                ;; (message-ptr message-len)
+                                :params [:i32 :i32]
+                                :result :i32}
+                }}
