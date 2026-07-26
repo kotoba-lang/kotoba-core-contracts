@@ -17,5 +17,7 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@13.4
         with:
           cli: latest
+          bb: latest
       - run: clojure -M:test
       - run: clojure -M:lint
+      - run: bb scripts/check-package-contract.bb
