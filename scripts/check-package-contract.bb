@@ -1,4 +1,17 @@
 #!/usr/bin/env bb
+;; WARNING: this is a SECOND implementation of kotoba.lang.package-contract,
+;; hand-maintained in babashka, and it drifts. clojure -M:test already runs the
+;; whole lang/package-conformance corpus through the real validator
+;; (package_contract_test.clj), so this file adds no coverage -- only the
+;; opportunity to disagree with the thing it duplicates.
+;;
+;; It did disagree: kotoba-lang#97 landed the :negative-invalid-definition-cid-lock
+;; case and this runner kept accepting it, so CI went red the moment the rule
+;; was implemented for real in #17.
+;;
+;; It is also `bb`, which ADR-2607173000 retired as a script host. Removing it
+;; means editing .github/workflows, which needs a token scope I do not have;
+;; see the issue linked from that PR.
 (require '[clojure.edn :as edn]
          '[clojure.java.io :as io]
          '[clojure.set :as set]
@@ -131,6 +144,23 @@
         (when-not (cid? (:dep/component-cid dep))
           (fail "component cid required" {:dependency (:dep/name dep)
                                            :value (:dep/component-cid dep)})))
+      ;; Mirrors kotoba.lang.package-contract/definition-cids-error. This file
+       ;; is a second, hand-maintained implementation of that validator, so a
+       ;; rule added there has to be added here too or the two disagree -- which
+       ;; is exactly what happened: the corpus case landed and this runner kept
+       ;; accepting it. See the note at the top of this file.
+      (let [cids (:dep/definition-cids dep)]
+        (when (some? cids)
+          (when-not (vector? cids)
+            (fail "definition cids must be a unique CID vector"
+                  {:field :dep/definition-cids :value cids :reason :not-a-vector}))
+          (doseq [c cids]
+            (when-not (cid? c)
+              (fail "definition cids must be a unique CID vector"
+                    {:field :dep/definition-cids :value c :reason :not-a-cid})))
+          (when-not (= (count cids) (count (set cids)))
+            (fail "definition cids must be a unique CID vector"
+                  {:field :dep/definition-cids :value cids :reason :duplicate}))))
       (when-not (seq (:dep/signers dep))
         (fail "signer required" {:dep dep}))
       (let [signers (set (:dep/signers dep))
