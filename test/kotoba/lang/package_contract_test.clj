@@ -93,3 +93,30 @@
     (is (= 1 (:kotoba.lang.package/version package)))
     (is (contains? (set (get-in package [:manifest :package-kinds :allow-kinds]))
                    :schema-contract))))
+
+(deftest definition-cids-are-optional-but-must-be-unique-cids
+  (let [base (read-edn "lang/package-conformance/positive/contract-lock.edn")
+        tc {:declared-capabilities []}
+        with (fn [v] (update base :deps
+                             (fn [deps] (mapv #(assoc % :dep/definition-cids v) deps))))
+        without (update base :deps
+                        (fn [deps] (mapv #(dissoc % :dep/definition-cids) deps)))
+        real-cid "bafyreiexhwzz2yskglefvifcywaijpy66ikn3grbvywrlcz5dxumdywfme"
+        other-cid "bafyreif4x7tu3gsgcbrdjm6qdfqzuo3av2jim2v443rsqpbocdyh3pogdy"
+        msg #(:message (contract/lockfile-error % tc))]
+    (testing "omitted entirely -- every dep predating the field stays valid"
+      (is (nil? (contract/lockfile-error without tc))))
+    (testing "an empty vector pins nothing and is accepted"
+      (is (nil? (contract/lockfile-error (with []) tc))))
+    (testing "distinct real CIDs are accepted"
+      (is (nil? (contract/lockfile-error (with [real-cid other-cid]) tc))))
+    (testing "a non-vector is rejected"
+      (is (= "definition cids must be a unique CID vector" (msg (with real-cid))))
+      (is (= :not-a-vector (get-in (contract/lockfile-error (with real-cid) tc) [:data :reason]))))
+    (testing "a syntactically invalid CID is rejected -- the conformance corpus case"
+      (is (= "definition cids must be a unique CID vector" (msg (with ["not-a-cid"]))))
+      (is (= :not-a-cid (get-in (contract/lockfile-error (with ["not-a-cid"]) tc) [:data :reason]))))
+    (testing "a repeated CID is rejected: a lock generator bug, or padding so a diff looks unchanged"
+      (is (= "definition cids must be a unique CID vector"
+             (msg (with [real-cid real-cid]))))
+      (is (= :duplicate (get-in (contract/lockfile-error (with [real-cid real-cid]) tc) [:data :reason]))))))
