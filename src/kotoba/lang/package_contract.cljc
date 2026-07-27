@@ -99,6 +99,36 @@
                        {:field field :value contract})))
           value)))
 
+(defn definition-cids-error
+  "A dep may pin the exact definitions it resolved against, not just the tree
+  and manifest it came from. :dep/tree-cid says \"this is the source I built
+  against\"; :dep/definition-cids says \"and these are the definitions inside
+  it I actually bound to\", so a republish that keeps the tree but swaps a
+  definition body is caught rather than silently accepted.
+
+  Optional -- omitting the key is valid, and every dep in the corpus that
+  predates it stays valid. When present it must be a vector of syntactically
+  valid CIDs with no repeats: a duplicate is either a lock generator bug or an
+  attempt to pad the list so a diff of it looks unchanged, and neither should
+  be admitted quietly."
+  [value field]
+  (cond
+    (nil? value) nil
+
+    (not (vector? value))
+    (invalid "definition cids must be a unique CID vector"
+             {:field field :value value :reason :not-a-vector})
+
+    :else
+    (or (some (fn [c]
+                (when-not (cid? c)
+                  (invalid "definition cids must be a unique CID vector"
+                           {:field field :value c :reason :not-a-cid})))
+              value)
+        (when-not (= (count value) (count (set value)))
+          (invalid "definition cids must be a unique CID vector"
+                   {:field field :value value :reason :duplicate})))))
+
 (defn contract-surfaces-error
   [m prefix]
   (or (contract-vector-error (get m (keyword prefix "provides"))
@@ -343,6 +373,8 @@
                           (when-not (cid? (get dep k))
                             (invalid "cid required" {:field k :value (get dep k)})))
                         [:dep/repo-rid :dep/tree-cid :dep/manifest-cid])
+                  (definition-cids-error (:dep/definition-cids dep)
+                                         :dep/definition-cids)
                   (when-let [tree-bytes (get tree-bytes-by-dep (:dep/name dep))]
                     (tree-cid-error (:dep/tree-cid dep) tree-bytes))
                   (lock-dep-component-error
