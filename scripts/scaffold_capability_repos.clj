@@ -2,7 +2,8 @@
   "Generate one importable repository skeleton per actor:host capability.
 
   Usage:
-    clojure -M -m scaffold-capability-repos /absolute/output/root"
+    clojure -M -m scaffold-capability-repos /absolute/output/root
+    clojure -M -m scaffold-capability-repos /absolute/output/root --update"
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
             [kotoba.core.capability-repository :as repository]
@@ -78,28 +79,34 @@
      (str "test/kotoba/capability/" path "_test.clj")
      (test-source manifest)}))
 
-(defn write-repo! [root manifest sha]
+(defn write-repo!
+  ([root manifest sha] (write-repo! root manifest sha false))
+  ([root manifest sha update?]
   (let [dir (io/file root (repository/repository-name
                            (:capability/id manifest)))]
-    (when (.exists dir)
+    (when (and (.exists dir) (not update?))
       (throw (ex-info "refusing to overwrite capability repository"
                       {:path (.getCanonicalPath dir)})))
     (doseq [[path content] (repo-files manifest sha)]
       (let [file (io/file dir path)]
         (.mkdirs (.getParentFile file))
         (spit file content)))
-    (.getCanonicalPath dir)))
+    (.getCanonicalPath dir))))
 
-(defn -main [& [root]]
+(defn -main [& [root mode]]
   (when-not root
     (throw (ex-info "absolute output root required" {})))
   (when-not (.isAbsolute (io/file root))
     (throw (ex-info "output root must be absolute" {:root root})))
-  (let [sha (core-contracts-sha)
+  (when-not (contains? #{nil "--update"} mode)
+    (throw (ex-info "unknown scaffold mode" {:mode mode})))
+  (let [update? (= "--update" mode)
+        sha (core-contracts-sha)
         runtime-contract (contracts/capability-contract)]
     (doseq [manifest (repository/full-catalog runtime-contract)]
       (let [dir (io/file root (repository/repository-name
                                (:capability/id manifest)))]
-        (if (.exists dir)
+        (if (and (.exists dir) (not update?))
           (println "SKIP" (.getCanonicalPath dir))
-          (println (write-repo! root manifest sha)))))))
+          (println (if update? "UPDATE" "CREATE")
+                   (write-repo! root manifest sha update?)))))))
