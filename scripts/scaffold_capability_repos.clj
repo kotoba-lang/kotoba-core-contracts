@@ -63,6 +63,7 @@
 (defn repo-files [manifest sha]
   (let [path (ns-path (:capability/id manifest))]
     {"README.md" (readme-source manifest)
+     ".gitignore" ".cpcache/\n.clj-kondo/.cache/\ntarget/\n"
      "deps.edn" (deps-source sha)
      "capability.edn" (pr-str manifest)
      (str "src/kotoba/capability/" path ".cljc")

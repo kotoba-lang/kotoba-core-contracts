@@ -83,7 +83,7 @@
   (let [manifest (capability-repository/repository-manifest "http/fetch")
         sha (apply str (repeat 40 "a"))
         files (scaffold/repo-files manifest sha)]
-    (is (= #{"README.md" "deps.edn" "capability.edn"
+    (is (= #{"README.md" ".gitignore" "deps.edn" "capability.edn"
              "src/kotoba/capability/http/fetch.cljc"
              "test/kotoba/capability/http/fetch_test.clj"}
            (set (keys files))))
