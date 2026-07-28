@@ -5,7 +5,8 @@
     clojure -M -m scaffold-capability-repos /absolute/output/root"
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
-            [kotoba.core.capability-repository :as repository]))
+            [kotoba.core.capability-repository :as repository]
+            [kotoba.core.contracts :as contracts]))
 
 (defn- core-contracts-sha []
   (let [sha (System/getenv "CAPABILITY_CORE_CONTRACTS_SHA")]
@@ -20,19 +21,21 @@
 
 (defn- manifest-source [manifest]
   (str "(ns " (repository/namespace-symbol (:capability/id manifest)) "\n"
-       "  \"Importable contract for " (:capability/id manifest) ".\"\n"
-       "  (:require [kotoba.core.capability-repository :as repository]))\n\n"
+       "  \"Importable contract for " (:capability/id manifest) ".\")\n\n"
        "(def manifest\n"
-       "  (repository/repository-manifest \"" (:capability/id manifest) "\"))\n"))
+       "  " (pr-str manifest) ")\n"))
 
 (defn- test-source [manifest]
   (let [ns-name (repository/namespace-symbol (:capability/id manifest))]
     (str "(ns " ns-name "-test\n"
          "  (:require [clojure.test :refer [deftest is]]\n"
          "            [" ns-name " :as capability]\n"
-         "            [kotoba.core.capability-repository :as repository]))\n\n"
+         "            [kotoba.core.capability-repository :as repository]\n"
+         "            [kotoba.core.contracts :as contracts]))\n\n"
          "(deftest manifest-conforms\n"
-         "  (is (= [] (repository/validate-manifest capability/manifest))))\n")))
+         "  (is (= [] (repository/validate-manifest\n"
+         "             (contracts/capability-contract)\n"
+         "             capability/manifest))))\n")))
 
 (defn- deps-source [sha]
   (pr-str
@@ -88,6 +91,11 @@
     (throw (ex-info "absolute output root required" {})))
   (when-not (.isAbsolute (io/file root))
     (throw (ex-info "output root must be absolute" {:root root})))
-  (let [sha (core-contracts-sha)]
-    (doseq [manifest (repository/actor-host-catalog)]
-      (println (write-repo! root manifest sha)))))
+  (let [sha (core-contracts-sha)
+        runtime-contract (contracts/capability-contract)]
+    (doseq [manifest (repository/full-catalog runtime-contract)]
+      (let [dir (io/file root (repository/repository-name
+                               (:capability/id manifest)))]
+        (if (.exists dir)
+          (println "SKIP" (.getCanonicalPath dir))
+          (println (write-repo! root manifest sha)))))))

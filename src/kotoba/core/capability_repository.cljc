@@ -26,18 +26,118 @@
    :json-extract-field "data/json"})
 
 (def radicle-rids
-  {"clock/monotonic" "rad:z25t4k7snnY6CkuSJY2JCK4SANe2L"
+  {"audio/io" "rad:zX2TtjXmQDxFG7RcjGFJ2fjZXAuB"
+   "ble/scan" "rad:z3acpKDbCk1fnoJAeCzqDYubTdQ1u"
+   "calendar/read" "rad:z2ma8sQFJZ11Zqh4wGqVNN3KxB5Qf"
+   "cc/cdx-query" "rad:z3a2PAttEcoz8cosuXQFCfXzMsXmo"
+   "cc/warc-extract" "rad:z4C2P4voivgJXd6sZhtthMTEadGin"
+   "clipboard/text" "rad:z3mV88V83Ddw6B56Ux5kqtTuJxcV1"
+   "clock/monotonic" "rad:z25t4k7snnY6CkuSJY2JCK4SANe2L"
+   "component/database" "rad:z3UXbiYV8xBquMFAmDMfKfb3v5Y47"
+   "component/http" "rad:z4WBMDJYF4cfhdBCdnLmSLiFGCd21"
+   "contacts/read" "rad:z3wUmFNv5MiZ1e8ySHo8xxKhFo6yP"
+   "corpus/append" "rad:z3wnw7KeZCBN5yiT81RgMg5Xp7xD6"
+   "corpus/publish" "rad:z4LrejM2AFx9u8hgdW3gn1P6VW9R7"
+   "crypto/tls" "rad:z3Rg9Wmr1RiGapTg8NzVRCg46teq8"
    "data/cbor" "rad:z24o5QsGMa3pkGEuqP48XSMDEPdFN"
    "data/json" "rad:z3yzK8jyMmrUaYuzMDfFH1W5k8H1a"
+   "dma/map" "rad:zR1KKTVy51jQ9vHzLw6RoCfYi43K"
+   "fs/app-data" "rad:z51vNMpisTEAsj9pHU6KQuUwfQZ3"
+   "gpu/clear" "rad:z32P2Gc2pvSXCqdGEiTS4c3PMwfbY"
+   "gpu/draw-frame" "rad:z2SfzeSnaCWBgokoof7YPXfMMYnqx"
+   "gpu/set-position" "rad:zPTSg8QrCRGVC8bpZgqiu8KhZTL1"
+   "graph/kotoba" "rad:z3Myn6N1k9ssuG9gdBwJfj7k3zo35"
    "hash/sha256" "rad:z26YBHK3P3JhT5JJhcxwXuHXjVnZA"
    "http/fetch" "rad:z2GoJStxV5pz3hEHYorXA3fW9ZJgG"
    "http/post" "rad:z2t8b61Lztq4wWDGLasNN1Wzqrc76"
    "identity/keypair" "rad:z4XZ2gd94u19C8vxYrrfAEVsVUCNK"
    "identity/sign" "rad:z4WcsYktoZ1HwvCPgKjXFa1J3kpi7"
    "identity/verify" "rad:z3T5b7WcUZ7reoSTwGrd1nfJ6KagG"
+   "irq/subscribe" "rad:z3CMYzKaFFvZEco2jkL7wQa9kRcU3"
+   "kami/engine" "rad:z2izrSL6G3Mtj4oM9jbUfz3qgfLua"
+   "keychain/text" "rad:z2hJdyKaRfjfPuVXtK19qHW4guAx3"
+   "ledger/append" "rad:z2xVd1aZhDKsFNk7TBkN5Bf3nWmuQ"
    "llm/infer" "rad:z3gjHkV7jc464fianWuZ7NxAcaR4Y"
    "log/read" "rad:z4NFr1rR5c7VKNCNgCuQBHbNgj43w"
-   "log/write" "rad:z4DiGJTFkrNmj8QfHWr4vV9G5EgRC"})
+   "log/write" "rad:z4DiGJTFkrNmj8QfHWr4vV9G5EgRC"
+   "math/cos" "rad:z39ZE3TXtSgEsHketwNHmAdn9AzrG"
+   "math/sin" "rad:z3V5Cu6W19fQ8yBmDgxLc4dm5Toit"
+   "mmio/map" "rad:z3Pfx2pcf59cizdozsEEY1m6a2si3"
+   "motion/read" "rad:zhZe1g9AMiTBbL5MfqW59MnRfcps"
+   "net/connect" "rad:z2WMw5nSRLyv8B8vBs4RMmec7WaB7"
+   "net/transport" "rad:zmDR3paxbM73DcNvH2ssmZjidhDb"
+   "notify/show" "rad:z3oKTdfzdH59rYbfjLmmVt2aUQiLR"
+   "pci/config" "rad:z8G4LSaGWofnSDEWpSZXXzVJVmQe"
+   "random/bytes" "rad:zN54zqoakxpYM5E91ubN137A1UPP"
+   "render/galactic-frame" "rad:zqJghqCtnc6YMmnDFyvVDPVcbgUx"
+   "secret/use-postgresql-cancel"
+   "rad:z49wqJGXTgFrns2LwiH4xKUDz8Lao"
+   "secret/use-scram-sha256" "rad:z2W5aBnfjesEAdvwEFfoWsUWn26rV"
+   "time/now-days" "rad:zmLoczt7YwTvY6E9JspVRVdKjSdd"
+   "topic/publish" "rad:zsxMV2Zs4ZgMJ5H5xd2Z62wwoxYA"
+   "topic/subscribe" "rad:z4B6TCjQxVxktrSQwceuxWbfxZF4Y"
+   "wifi/info" "rad:zsNYPBzNRdcNfMDrpmvuRnaxKiT5"})
+
+(def capability-effects
+  {"ledger/append" #{:storage-write :integrity-record}
+   "fs/app-data" #{:storage-read :storage-write}
+   "notify/show" #{:external-communication :user-attention}
+   "clipboard/text" #{:device-read :device-write :personal-data}
+   "http/fetch" #{:network-read}
+   "keychain/text" #{:storage-read :storage-write :secret}
+   "contacts/read" #{:personal-data :storage-read}
+   "calendar/read" #{:personal-data :storage-read}
+   "graph/kotoba" #{:storage-read :storage-write}
+   "log/write" #{:storage-write}
+   "clock/monotonic" #{:clock}
+   "random/bytes" #{:randomness}
+   "topic/publish" #{:ipc-write}
+   "topic/subscribe" #{:ipc-read}
+   "pci/config" #{:device-control}
+   "dma/map" #{:device-control :memory-access}
+   "irq/subscribe" #{:device-read}
+   "mmio/map" #{:device-control :memory-access}
+   "identity/keypair" #{:crypto :secret}
+   "identity/sign" #{:crypto :secret}
+   "identity/verify" #{:crypto}
+   "hash/sha256" #{:crypto}
+   "http/post" #{:network-write :data-egress}
+   "log/read" #{:storage-read}
+   "llm/infer" #{:llm-inference :network-write :data-egress}
+   "gpu/clear" #{:device-write}
+   "math/cos" #{:pure-compute}
+   "math/sin" #{:pure-compute}
+   "gpu/set-position" #{:device-write}
+   "gpu/draw-frame" #{:device-write}
+   "time/now-days" #{:clock}
+   "render/galactic-frame" #{:user-interface-read}
+   "kami/engine" #{:simulation-read :simulation-write :randomness}
+   "motion/read" #{:sensor-read :personal-data}
+   "audio/io" #{:sensor-read :device-write :personal-data}
+   "ble/scan" #{:sensor-read :network-read :personal-data}
+   "wifi/info" #{:network-read :personal-data}
+   "net/connect" #{:network-write}
+   "crypto/tls" #{:network-write :crypto :secret}
+   "net/transport" #{:network-read :network-write :data-egress}
+   "component/http" #{:network-read :network-write :data-egress}
+   "component/database"
+   #{:network-read :network-write :storage-read :storage-write :data-egress}
+   "secret/use-scram-sha256" #{:crypto :secret}
+   "secret/use-postgresql-cancel" #{:network-write :secret}
+   "data/cbor" #{:codec}
+   "data/json" #{:codec}
+   "cc/cdx-query" #{:network-read}
+   "cc/warc-extract" #{:network-read :storage-write}
+   "corpus/append" #{:storage-write}
+   "corpus/publish" #{:network-write :external-communication :data-egress}})
+
+(def approval-required-capabilities
+  #{"notify/show" "clipboard/text" "keychain/text" "contacts/read"
+    "calendar/read" "identity/keypair" "identity/sign" "http/post"
+    "llm/infer" "motion/read" "audio/io" "ble/scan" "wifi/info"
+    "net/connect" "crypto/tls" "net/transport" "component/http"
+    "component/database" "secret/use-scram-sha256"
+    "secret/use-postgresql-cancel" "corpus/publish"})
 
 (defn repository-name [capability-id]
   (str "capability-" (str/replace capability-id "/" "-")))
@@ -45,7 +145,7 @@
 (defn namespace-symbol [capability-id]
   (symbol
    (str "kotoba.capability."
-        (str/replace capability-id #"[/_-]" "."))))
+        (str/replace capability-id "/" "."))))
 
 (defn imports-by-capability []
   (reduce-kv
@@ -61,12 +161,15 @@
    {}
    (imports-by-capability)))
 
-(defn default-policy [effects]
-  (cond
-    (seq (set/intersection effects #{:network-write :secret}))
-    :approval-required
-
-    :else :autonomous))
+(defn default-policy
+  ([effects]
+   (if (seq (set/intersection effects #{:network-write :secret}))
+     :approval-required
+     :autonomous))
+  ([capability-id _effects]
+   (if (contains? approval-required-capabilities capability-id)
+     :approval-required
+     :autonomous)))
 
 (defn repository-manifest [capability-id]
   (let [imports (get (imports-by-capability) capability-id)
@@ -90,6 +193,54 @@
      {:format :wasm-component
       :digest-required? true
       :signature-required? true}}))
+
+(defn runtime-imports-by-capability
+  "Group a capability_contract.edn host surface by capability ID, retaining
+  registered capabilities whose provider imports are not implemented yet."
+  [runtime-contract]
+  (let [empty-groups
+        (into {} (map (fn [capability-id] [capability-id #{}]))
+              (keys (:capability-ids runtime-contract)))]
+    (reduce-kv
+     (fn [out op {:keys [capability]}]
+       (if capability
+         (update out capability (fnil conj #{}) (keyword (name op)))
+         out))
+     empty-groups
+     (:host-imports runtime-contract))))
+
+(defn full-repository-manifest [runtime-contract capability-id]
+  (let [imports (get (runtime-imports-by-capability runtime-contract)
+                     capability-id ::unknown)
+        effects (get capability-effects capability-id)]
+    (when (= ::unknown imports)
+      (throw (ex-info "unknown runtime capability"
+                      {:capability/id capability-id})))
+    (when-not effects
+      (throw (ex-info "capability effects are not classified"
+                      {:capability/id capability-id})))
+    {:schema schema
+     :authority authority
+     :capability/id capability-id
+     :capability/version 1
+     :capability/repository
+     (str "kotoba-lang/" (repository-name capability-id))
+     :capability/radicle-rid (get radicle-rids capability-id)
+     :capability/imports imports
+     :capability/effects effects
+     :capability/default-policy (default-policy capability-id effects)
+     :capability/provider-status :contract-only
+     :capability/dependencies #{}
+     :capability/artifact
+     {:format :wasm-component
+      :digest-required? true
+      :signature-required? true}}))
+
+(defn full-catalog [runtime-contract]
+  (->> (:capability-ids runtime-contract)
+       keys
+       sort
+       (mapv #(full-repository-manifest runtime-contract %))))
 
 (defn actor-host-catalog []
   (->> (keys (imports-by-capability))
@@ -124,11 +275,15 @@
           :missing (set/difference expected actual)
           :excess (set/difference actual expected)}])))))
 
-(defn validate-manifest [manifest]
+(defn validate-manifest
+  ([manifest] (validate-manifest nil manifest))
+  ([runtime-contract manifest]
   (let [capability-id (:capability/id manifest)
         expected (when (string? capability-id)
                    (try
-                     (repository-manifest capability-id)
+                     (if runtime-contract
+                       (full-repository-manifest runtime-contract capability-id)
+                       (repository-manifest capability-id))
                      (catch #?(:clj Exception :cljs :default) _ nil)))
         artifact (:capability/artifact manifest)]
     (vec
@@ -139,6 +294,8 @@
         [{:problem :unexpected-authority}])
       (when-not expected
         [{:problem :unknown-capability :capability/id capability-id}])
+      (when-not (= 1 (:capability/version manifest))
+        [{:problem :unexpected-capability-version}])
       (when (and expected
                  (not= (:capability/repository expected)
                        (:capability/repository manifest)))
@@ -149,6 +306,10 @@
                        (:capability/radicle-rid manifest)))
         [{:problem :radicle-rid-mismatch
           :expected (:capability/radicle-rid expected)}])
+      (when-not (and (string? (:capability/radicle-rid manifest))
+                     (re-matches #"rad:z[1-9A-HJ-NP-Za-km-z]+"
+                                 (:capability/radicle-rid manifest)))
+        [{:problem :radicle-rid-required}])
       (when (and expected
                  (not= (:capability/imports expected)
                        (:capability/imports manifest)))
@@ -159,6 +320,13 @@
                        (:capability/effects manifest)))
         [{:problem :effect-surface-mismatch
           :expected (:capability/effects expected)}])
+      (when (and expected
+                 (not= (:capability/default-policy expected)
+                       (:capability/default-policy manifest)))
+        [{:problem :default-policy-mismatch
+          :expected (:capability/default-policy expected)}])
+      (when-not (= :contract-only (:capability/provider-status manifest))
+        [{:problem :provider-status-must-be-contract-only}])
       (when-not (empty? (:capability/dependencies manifest))
         [{:problem :capability-dependencies-forbidden}])
       (when-not (= :wasm-component (:format artifact))
@@ -166,7 +334,7 @@
       (when-not (true? (:digest-required? artifact))
         [{:problem :artifact-digest-required}])
       (when-not (true? (:signature-required? artifact))
-        [{:problem :artifact-signature-required}])))))
+        [{:problem :artifact-signature-required}]))))))
 
 (defn validate-catalog [catalog]
   (let [ids (map :capability/id catalog)
@@ -184,3 +352,29 @@
           :missing (set/difference actor-capability/known-imports (set imports))
           :excess (set/difference (set imports)
                                   actor-capability/known-imports)}])))))
+
+(defn validate-full-catalog [runtime-contract catalog]
+  (let [ids (map :capability/id catalog)
+        repos (map :capability/repository catalog)
+        imports (set (mapcat :capability/imports catalog))
+        expected-ids (set (keys (:capability-ids runtime-contract)))
+        expected-imports
+        (set (map (comp keyword name)
+                  (keep (fn [[op definition]]
+                          (when (:capability definition) op))
+                        (:host-imports runtime-contract))))]
+    (vec
+     (concat
+      (mapcat #(validate-manifest runtime-contract %) catalog)
+      (when-not (= expected-ids (set ids))
+        [{:problem :capability-id-coverage
+          :missing (set/difference expected-ids (set ids))
+          :excess (set/difference (set ids) expected-ids)}])
+      (when-not (= (count ids) (count (distinct ids)))
+        [{:problem :duplicate-capability-id}])
+      (when-not (= (count repos) (count (distinct repos)))
+        [{:problem :duplicate-capability-repository}])
+      (when-not (= expected-imports imports)
+        [{:problem :runtime-import-coverage
+          :missing (set/difference expected-imports imports)
+          :excess (set/difference imports expected-imports)}])))))
