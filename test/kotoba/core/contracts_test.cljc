@@ -75,6 +75,22 @@
            (capability-repository/repository-refs-for-imports
             #{:http-post :http-post-headers})))))
 
+(deftest full-atomic-capability-catalog-covers-runtime-authority
+  (let [runtime-contract (contracts/capability-contract)
+        catalog (capability-repository/full-catalog runtime-contract)]
+    (is (= 50 (count catalog)))
+    (is (= [] (capability-repository/validate-full-catalog
+               runtime-contract catalog)))
+    (is (= #{}
+           (:capability/imports
+            (capability-repository/full-repository-manifest
+             runtime-contract "contacts/read")))
+        "registered contract-only capabilities do not invent host imports")
+    (is (= :approval-required
+           (:capability/default-policy
+            (capability-repository/full-repository-manifest
+             runtime-contract "secret/use-scram-sha256"))))))
+
 (deftest atomic-capability-repository-rejects-drift
   (let [manifest (capability-repository/repository-manifest "identity/sign")]
     (is (some #(= :capability-dependencies-forbidden (:problem %))
