@@ -81,6 +81,33 @@
        sort
        (mapv repository-manifest)))
 
+(defn repository-refs-for-imports
+  "Return the exact atomic repository identities required by IMPORTS."
+  [imports]
+  (let [requested (set imports)]
+    (->> (actor-host-catalog)
+         (filter #(seq (set/intersection requested
+                                        (:capability/imports %))))
+         (mapv #(select-keys %
+                            [:capability/id
+                             :capability/version
+                             :capability/repository])))))
+
+(defn validate-envelope-repositories
+  "Require an envelope to name exactly the repositories owning its imports."
+  [envelope]
+  (let [expected (set (repository-refs-for-imports
+                       (:tamaki.capability/imports envelope)))
+        actual (set (:tamaki.capability/repositories envelope))]
+    (vec
+     (concat
+      (when-not (vector? (:tamaki.capability/repositories envelope))
+        [{:problem :capability-repositories-vector-required}])
+      (when-not (= expected actual)
+        [{:problem :capability-repository-set-mismatch
+          :missing (set/difference expected actual)
+          :excess (set/difference actual expected)}])))))
+
 (defn validate-manifest [manifest]
   (let [capability-id (:capability/id manifest)
         expected (when (string? capability-id)

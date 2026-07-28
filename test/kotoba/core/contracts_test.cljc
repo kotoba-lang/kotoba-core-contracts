@@ -66,7 +66,12 @@
             (capability-repository/repository-manifest "http/post"))))
     (is (= #{:http-post :http-post-headers}
            (:capability/imports
-            (capability-repository/repository-manifest "http/post"))))))
+            (capability-repository/repository-manifest "http/post"))))
+    (is (= [{:capability/id "http/post"
+             :capability/version 1
+             :capability/repository "kotoba-lang/capability-http-post"}]
+           (capability-repository/repository-refs-for-imports
+            #{:http-post :http-post-headers})))))
 
 (deftest atomic-capability-repository-rejects-drift
   (let [manifest (capability-repository/repository-manifest "identity/sign")]
@@ -90,6 +95,17 @@
     (is (str/includes? (get files "deps.edn") sha))
     (is (str/includes? (get files "src/kotoba/capability/http/fetch.cljc")
                        "kotoba.capability.http.fetch"))))
+
+(deftest envelope-must-name-exact-atomic-repositories
+  (let [imports #{:clock-monotonic :sha256-hex :log-write}
+        refs (capability-repository/repository-refs-for-imports imports)
+        envelope {:tamaki.capability/imports imports
+                  :tamaki.capability/repositories refs}]
+    (is (= [] (capability-repository/validate-envelope-repositories
+               envelope)))
+    (is (some #(= :capability-repository-set-mismatch (:problem %))
+              (capability-repository/validate-envelope-repositories
+               (update envelope :tamaki.capability/repositories pop))))))
 
 (deftest source-contract-loads-and-classifies
   (let [contract (contracts/source-contract)]
