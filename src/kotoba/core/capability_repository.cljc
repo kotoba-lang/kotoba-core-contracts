@@ -343,6 +343,64 @@
           :missing (set/difference expected actual)
           :excess (set/difference actual expected)}])))))
 
+(def allowed-provider-statuses
+  "contract-only: discovery + definition CID only.
+   reference-implemented: published pure/reference provider with content
+   digest (sha256 of wasm core or component bytes). Not a production
+   signature ceremony — :signature may be :reference-unsigned for the
+   pure-compute allowlist until a signing pipeline exists."
+  #{:contract-only :reference-implemented})
+
+(def reference-implemented-allowlist
+  "Pure / ambient-free capabilities permitted to ship reference providers
+  without production signing yet."
+  #{"math/sin" "math/cos" "hash/sha256" "data/cbor" "data/json"
+    "clock/monotonic" "random/bytes" "time/now-days"})
+
+(defn- sha256-hex-string?
+  [value]
+  (and (string? value) (boolean (re-matches #"[0-9a-f]{64}" value))))
+
+(defn- validate-provider-artifact
+  "Shared artifact + provider-status rules for atomic capability packages."
+  [manifest artifact]
+  (let [status (:capability/provider-status manifest)
+        capability-id (:capability/id manifest)]
+    (vec
+     (concat
+      (when-not (contains? allowed-provider-statuses status)
+        [{:problem :provider-status-unsupported :status status}])
+      (when-not (= :wasm-component (:format artifact))
+        [{:problem :artifact-format-must-be-wasm-component}])
+      (when-not (true? (:digest-required? artifact))
+        [{:problem :artifact-digest-required}])
+      (when-not (true? (:signature-required? artifact))
+        [{:problem :artifact-signature-required}])
+      (when (= :contract-only status)
+        (concat
+         (when (contains? artifact :sha256)
+           [{:problem :contract-only-must-omit-sha256}])
+         (when (contains? artifact :path)
+           [{:problem :contract-only-must-omit-artifact-path}])))
+      (when (= :reference-implemented status)
+        (concat
+         (when-not (contains? reference-implemented-allowlist capability-id)
+           [{:problem :reference-implemented-not-allowlisted
+             :capability/id capability-id}])
+         (when-not (sha256-hex-string? (:sha256 artifact))
+           [{:problem :reference-implemented-sha256-required}])
+         (when-not (and (string? (:path artifact))
+                        (re-matches #"artifacts/.+\.wasm" (:path artifact)))
+           [{:problem :reference-implemented-artifact-path-required
+             :hint "artifacts/<name>.wasm"}])
+         (when-not (or (map? (:signature artifact))
+                       (= :reference-unsigned (:signature artifact)))
+           [{:problem :reference-implemented-signature-required
+             :hint ":reference-unsigned or signature map"}])
+         (when-not (and (map? (:exports artifact))
+                        (seq (:exports artifact)))
+           [{:problem :reference-implemented-exports-required}])))))))
+
 (defn validate-manifest
   ([manifest] (validate-manifest nil manifest))
   ([runtime-contract manifest]
@@ -401,16 +459,9 @@
                        (:capability/default-policy manifest)))
         [{:problem :default-policy-mismatch
           :expected (:capability/default-policy expected)}])
-      (when-not (= :contract-only (:capability/provider-status manifest))
-        [{:problem :provider-status-must-be-contract-only}])
       (when-not (empty? (:capability/dependencies manifest))
         [{:problem :capability-dependencies-forbidden}])
-      (when-not (= :wasm-component (:format artifact))
-        [{:problem :artifact-format-must-be-wasm-component}])
-      (when-not (true? (:digest-required? artifact))
-        [{:problem :artifact-digest-required}])
-      (when-not (true? (:signature-required? artifact))
-        [{:problem :artifact-signature-required}]))))))
+      (validate-provider-artifact manifest artifact))))))
 
 (defn validate-catalog [catalog]
   (let [ids (map :capability/id catalog)
