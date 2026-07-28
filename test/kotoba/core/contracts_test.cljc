@@ -69,7 +69,9 @@
             (capability-repository/repository-manifest "http/post"))))
     (is (= [{:capability/id "http/post"
              :capability/version 1
-             :capability/repository "kotoba-lang/capability-http-post"}]
+             :capability/repository "kotoba-lang/capability-http-post"
+             :capability/radicle-rid
+             "rad:z2t8b61Lztq4wWDGLasNN1Wzqrc76"}]
            (capability-repository/repository-refs-for-imports
             #{:http-post :http-post-headers})))))
 

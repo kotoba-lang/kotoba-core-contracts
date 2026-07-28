@@ -25,6 +25,20 @@
    :json-encode "data/json"
    :json-extract-field "data/json"})
 
+(def radicle-rids
+  {"clock/monotonic" "rad:z25t4k7snnY6CkuSJY2JCK4SANe2L"
+   "data/cbor" "rad:z24o5QsGMa3pkGEuqP48XSMDEPdFN"
+   "data/json" "rad:z3yzK8jyMmrUaYuzMDfFH1W5k8H1a"
+   "hash/sha256" "rad:z26YBHK3P3JhT5JJhcxwXuHXjVnZA"
+   "http/fetch" "rad:z2GoJStxV5pz3hEHYorXA3fW9ZJgG"
+   "http/post" "rad:z2t8b61Lztq4wWDGLasNN1Wzqrc76"
+   "identity/keypair" "rad:z4XZ2gd94u19C8vxYrrfAEVsVUCNK"
+   "identity/sign" "rad:z4WcsYktoZ1HwvCPgKjXFa1J3kpi7"
+   "identity/verify" "rad:z3T5b7WcUZ7reoSTwGrd1nfJ6KagG"
+   "llm/infer" "rad:z3gjHkV7jc464fianWuZ7NxAcaR4Y"
+   "log/read" "rad:z4NFr1rR5c7VKNCNgCuQBHbNgj43w"
+   "log/write" "rad:z4DiGJTFkrNmj8QfHWr4vV9G5EgRC"})
+
 (defn repository-name [capability-id]
   (str "capability-" (str/replace capability-id "/" "-")))
 
@@ -66,6 +80,7 @@
      :capability/version 1
      :capability/repository
      (str "kotoba-lang/" (repository-name capability-id))
+     :capability/radicle-rid (get radicle-rids capability-id)
      :capability/imports imports
      :capability/effects effects
      :capability/default-policy (default-policy effects)
@@ -91,7 +106,8 @@
          (mapv #(select-keys %
                             [:capability/id
                              :capability/version
-                             :capability/repository])))))
+                             :capability/repository
+                             :capability/radicle-rid])))))
 
 (defn validate-envelope-repositories
   "Require an envelope to name exactly the repositories owning its imports."
@@ -128,6 +144,11 @@
                        (:capability/repository manifest)))
         [{:problem :repository-name-mismatch
           :expected (:capability/repository expected)}])
+      (when (and expected
+                 (not= (:capability/radicle-rid expected)
+                       (:capability/radicle-rid manifest)))
+        [{:problem :radicle-rid-mismatch
+          :expected (:capability/radicle-rid expected)}])
       (when (and expected
                  (not= (:capability/imports expected)
                        (:capability/imports manifest)))
