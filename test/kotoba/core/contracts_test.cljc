@@ -67,13 +67,33 @@
     (is (= #{:http-post :http-post-headers}
            (:capability/imports
             (capability-repository/repository-manifest "http/post"))))
-    (is (= [{:capability/id "http/post"
-             :capability/version 1
-             :capability/repository "kotoba-lang/capability-http-post"
-             :capability/radicle-rid
-             "rad:z2t8b61Lztq4wWDGLasNN1Wzqrc76"}]
-           (capability-repository/repository-refs-for-imports
-            #{:http-post :http-post-headers})))))
+    (let [[ref] (capability-repository/repository-refs-for-imports
+                 #{:http-post :http-post-headers})]
+      (is (= "http/post" (:capability/id ref)))
+      (is (= "kotoba-lang/capability-http-post"
+             (:capability/repository ref)))
+      (is (= "rad:z2t8b61Lztq4wWDGLasNN1Wzqrc76"
+             (:capability/radicle-rid ref)))
+      (is (string? (:capability/definition-cid ref)))
+      (is (= (capability-repository/definition-hash-contract-cid)
+             (:capability/hash-contract-cid ref))))))
+
+(deftest capability-identity-is-semantic-not-location-based
+  (let [manifest
+        (capability-repository/repository-manifest "http/fetch")
+        cid (:capability/definition-cid manifest)
+        relocated (assoc manifest
+                         :capability/id "renamed/http-fetch"
+                         :capability/repository "another-org/discovery-alias"
+                         :capability/radicle-rid "rad:zAliasOnly")]
+    (is (= cid (capability-repository/definition-cid relocated))
+        "name and repository aliases do not participate in semantic identity")
+    (is (not= cid
+              (capability-repository/definition-cid
+               (update manifest :capability/effects conj :data-egress)))
+        "an effect change creates a new immutable identity")
+    (is (= manifest
+           (capability-repository/resolve-definition-cid cid)))))
 
 (deftest full-atomic-capability-catalog-covers-runtime-authority
   (let [runtime-contract (contracts/capability-contract)
@@ -100,7 +120,11 @@
               (capability-repository/validate-manifest
                (assoc-in manifest
                          [:capability/artifact :signature-required?]
-                         false))))))
+                         false))))
+    (is (some #(= :capability-definition-cid-mismatch (:problem %))
+              (capability-repository/validate-manifest
+               (assoc manifest :capability/definition-cid
+                      (:capability/hash-contract-cid manifest)))))))
 
 (deftest atomic-capability-scaffold-is-importable-by-shape
   (let [manifest (capability-repository/repository-manifest "http/fetch")

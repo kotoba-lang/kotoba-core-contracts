@@ -1,5 +1,8 @@
 {:paths ["src" "resources" "." "scripts"]
  :deps {org.clojure/clojure {:mvn/version "1.12.4"}
+        io.github.kotoba-lang/dag-cbor
+        {:git/url "https://github.com/kotoba-lang/dag-cbor.git"
+         :git/sha "58144e81ccdf7a82367085c66ea21ca84a1a7ddb"}
         io.github.kotoba-lang/io-multiformats
         {:git/url "https://github.com/kotoba-lang/io-multiformats.git"
          :git/sha "eec3ee85c458ea830be94518b9a42f4a8f1aee40"}

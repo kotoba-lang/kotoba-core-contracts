@@ -32,6 +32,14 @@ clojure -M:test
 An authority capability has exactly one public repository. Composition
 capabilities remain in Tamaki and never receive HostCaps directly.
 
+Capability imports follow Kotoba's Unison-like semantic identity boundary:
+the repository name and Radicle RID are discovery aliases, while
+`:capability/definition-cid` is CIDv1 over a canonical DAG-CBOR definition
+block containing the exact ABI, imports, effects, default policy and artifact
+format. Renaming or moving a repository preserves identity; changing authority
+semantics creates a new CID. The hash rules are themselves pinned by
+`:capability/hash-contract-cid`.
+
 ```sh
 clojure -M -m scaffold-capability-repos /absolute/output/root
 ```
