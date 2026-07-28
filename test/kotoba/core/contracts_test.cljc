@@ -1,6 +1,58 @@
 (ns kotoba.core.contracts-test
   (:require [clojure.test :refer [deftest is run-tests testing]]
+            [kotoba.core.actor-capability :as actor-capability]
             [kotoba.core.contracts :as contracts]))
+
+(def ^:private heartbeat-execution
+  {:execution/substrate :kototama-wasm
+   :execution/role :control-guest
+   :execution/realizes #{:organism/heartbeat}
+   :execution/capability-contract
+   {:contract/version 1
+    :abi/namespace "actor:host"
+    :abi/version 0
+    :imports #{:clock-monotonic :sha256-hex :log-write}
+    :grants #{:clock-monotonic :sha256-hex :log-write}
+    :limits {:allow-write-imports? true
+             :allow-secret-imports? false
+             :max-http-posts 0
+             :max-http-fetches 0
+             :max-llm-infers 0
+             :max-memory-pages 4
+             :allowed-url-prefixes []}
+    :effect-policy {:clock :autonomous
+                    :crypto :autonomous
+                    :storage-write :autonomous}}})
+
+(deftest actor-capability-contract-is-shared-authority
+  (is (= "kotoba-lang/kotoba-core-contracts"
+         (:authority actor-capability/contract)))
+  (is (= #{:clock-monotonic :sha256-hex :log-write}
+         (actor-capability/required-imports #{:organism/heartbeat})))
+  (let [report (actor-capability/validate-execution
+                #{:organism/heartbeat} heartbeat-execution)
+        envelope (actor-capability/execution-envelope
+                  :test/heartbeat #{:organism/heartbeat}
+                  heartbeat-execution)]
+    (is (:ok? report))
+    (is (:ok? (actor-capability/validate-envelope envelope)))
+    (is (= ":test/heartbeat" (:tamaki.capability/actor envelope)))
+    (is (nil? (:actor/private-objective envelope)))))
+
+(deftest actor-capability-contract-fails-closed
+  (let [envelope (actor-capability/execution-envelope
+                  :test/heartbeat #{:organism/heartbeat}
+                  heartbeat-execution)]
+    (is (false? (:ok? (actor-capability/validate-envelope
+                       (update envelope :tamaki.capability/grants
+                               disj :log-write)))))
+    (is (false? (:ok? (actor-capability/validate-envelope
+                       (update envelope :tamaki.capability/grants
+                               conj :http-post)))))
+    (is (false? (:ok? (actor-capability/validate-envelope
+                       (assoc envelope :tamaki.capability/version 2)))))
+    (is (false? (:ok? (actor-capability/validate-execution
+                       #{} heartbeat-execution))))))
 
 (deftest source-contract-loads-and-classifies
   (let [contract (contracts/source-contract)]
