@@ -5,4 +5,5 @@
   :role :contract
   :must-not [:compile :execute-components :grant-runtime-authority]
   :depends-on ["kotoba-lang/io-multiformats"
+               "kotoba-lang/dag-cbor"
                "kotoba-lang/org-ietf-ed25519"]}}
