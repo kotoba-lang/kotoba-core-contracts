@@ -1,7 +1,10 @@
 (ns kotoba.core.contracts-test
-  (:require [clojure.test :refer [deftest is run-tests testing]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is run-tests testing]]
             [kotoba.core.actor-capability :as actor-capability]
-            [kotoba.core.contracts :as contracts]))
+            [kotoba.core.capability-repository :as capability-repository]
+            [kotoba.core.contracts :as contracts]
+            [scaffold-capability-repos :as scaffold]))
 
 (def ^:private heartbeat-execution
   {:execution/substrate :kototama-wasm
@@ -53,6 +56,58 @@
                        (assoc envelope :tamaki.capability/version 2)))))
     (is (false? (:ok? (actor-capability/validate-execution
                        #{} heartbeat-execution))))))
+
+(deftest atomic-capability-repository-catalog-conforms
+  (let [catalog (capability-repository/actor-host-catalog)]
+    (is (= 12 (count catalog)))
+    (is (= [] (capability-repository/validate-catalog catalog)))
+    (is (= "kotoba-lang/capability-http-post"
+           (:capability/repository
+            (capability-repository/repository-manifest "http/post"))))
+    (is (= #{:http-post :http-post-headers}
+           (:capability/imports
+            (capability-repository/repository-manifest "http/post"))))
+    (is (= [{:capability/id "http/post"
+             :capability/version 1
+             :capability/repository "kotoba-lang/capability-http-post"
+             :capability/radicle-rid
+             "rad:z2t8b61Lztq4wWDGLasNN1Wzqrc76"}]
+           (capability-repository/repository-refs-for-imports
+            #{:http-post :http-post-headers})))))
+
+(deftest atomic-capability-repository-rejects-drift
+  (let [manifest (capability-repository/repository-manifest "identity/sign")]
+    (is (some #(= :capability-dependencies-forbidden (:problem %))
+              (capability-repository/validate-manifest
+               (assoc manifest :capability/dependencies #{"identity/keypair"}))))
+    (is (some #(= :artifact-signature-required (:problem %))
+              (capability-repository/validate-manifest
+               (assoc-in manifest
+                         [:capability/artifact :signature-required?]
+                         false))))))
+
+(deftest atomic-capability-scaffold-is-importable-by-shape
+  (let [manifest (capability-repository/repository-manifest "http/fetch")
+        sha (apply str (repeat 40 "a"))
+        files (scaffold/repo-files manifest sha)]
+    (is (= #{"README.md" ".gitignore" "deps.edn" "capability.edn"
+             "src/kotoba/capability/http/fetch.cljc"
+             "test/kotoba/capability/http/fetch_test.clj"}
+           (set (keys files))))
+    (is (str/includes? (get files "deps.edn") sha))
+    (is (str/includes? (get files "src/kotoba/capability/http/fetch.cljc")
+                       "kotoba.capability.http.fetch"))))
+
+(deftest envelope-must-name-exact-atomic-repositories
+  (let [imports #{:clock-monotonic :sha256-hex :log-write}
+        refs (capability-repository/repository-refs-for-imports imports)
+        envelope {:tamaki.capability/imports imports
+                  :tamaki.capability/repositories refs}]
+    (is (= [] (capability-repository/validate-envelope-repositories
+               envelope)))
+    (is (some #(= :capability-repository-set-mismatch (:problem %))
+              (capability-repository/validate-envelope-repositories
+               (update envelope :tamaki.capability/repositories pop))))))
 
 (deftest source-contract-loads-and-classifies
   (let [contract (contracts/source-contract)]
