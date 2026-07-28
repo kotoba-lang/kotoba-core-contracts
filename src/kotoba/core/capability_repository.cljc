@@ -26,18 +26,57 @@
    :json-extract-field "data/json"})
 
 (def radicle-rids
-  {"clock/monotonic" "rad:z25t4k7snnY6CkuSJY2JCK4SANe2L"
+  {"audio/io" "rad:zX2TtjXmQDxFG7RcjGFJ2fjZXAuB"
+   "ble/scan" "rad:z3acpKDbCk1fnoJAeCzqDYubTdQ1u"
+   "calendar/read" "rad:z2ma8sQFJZ11Zqh4wGqVNN3KxB5Qf"
+   "cc/cdx-query" "rad:z3a2PAttEcoz8cosuXQFCfXzMsXmo"
+   "cc/warc-extract" "rad:z4C2P4voivgJXd6sZhtthMTEadGin"
+   "clipboard/text" "rad:z3mV88V83Ddw6B56Ux5kqtTuJxcV1"
+   "clock/monotonic" "rad:z25t4k7snnY6CkuSJY2JCK4SANe2L"
+   "component/database" "rad:z3UXbiYV8xBquMFAmDMfKfb3v5Y47"
+   "component/http" "rad:z4WBMDJYF4cfhdBCdnLmSLiFGCd21"
+   "contacts/read" "rad:z3wUmFNv5MiZ1e8ySHo8xxKhFo6yP"
+   "corpus/append" "rad:z3wnw7KeZCBN5yiT81RgMg5Xp7xD6"
+   "corpus/publish" "rad:z4LrejM2AFx9u8hgdW3gn1P6VW9R7"
+   "crypto/tls" "rad:z3Rg9Wmr1RiGapTg8NzVRCg46teq8"
    "data/cbor" "rad:z24o5QsGMa3pkGEuqP48XSMDEPdFN"
    "data/json" "rad:z3yzK8jyMmrUaYuzMDfFH1W5k8H1a"
+   "dma/map" "rad:zR1KKTVy51jQ9vHzLw6RoCfYi43K"
+   "fs/app-data" "rad:z51vNMpisTEAsj9pHU6KQuUwfQZ3"
+   "gpu/clear" "rad:z32P2Gc2pvSXCqdGEiTS4c3PMwfbY"
+   "gpu/draw-frame" "rad:z2SfzeSnaCWBgokoof7YPXfMMYnqx"
+   "gpu/set-position" "rad:zPTSg8QrCRGVC8bpZgqiu8KhZTL1"
+   "graph/kotoba" "rad:z3Myn6N1k9ssuG9gdBwJfj7k3zo35"
    "hash/sha256" "rad:z26YBHK3P3JhT5JJhcxwXuHXjVnZA"
    "http/fetch" "rad:z2GoJStxV5pz3hEHYorXA3fW9ZJgG"
    "http/post" "rad:z2t8b61Lztq4wWDGLasNN1Wzqrc76"
    "identity/keypair" "rad:z4XZ2gd94u19C8vxYrrfAEVsVUCNK"
    "identity/sign" "rad:z4WcsYktoZ1HwvCPgKjXFa1J3kpi7"
    "identity/verify" "rad:z3T5b7WcUZ7reoSTwGrd1nfJ6KagG"
+   "irq/subscribe" "rad:z3CMYzKaFFvZEco2jkL7wQa9kRcU3"
+   "kami/engine" "rad:z2izrSL6G3Mtj4oM9jbUfz3qgfLua"
+   "keychain/text" "rad:z2hJdyKaRfjfPuVXtK19qHW4guAx3"
+   "ledger/append" "rad:z2xVd1aZhDKsFNk7TBkN5Bf3nWmuQ"
    "llm/infer" "rad:z3gjHkV7jc464fianWuZ7NxAcaR4Y"
    "log/read" "rad:z4NFr1rR5c7VKNCNgCuQBHbNgj43w"
-   "log/write" "rad:z4DiGJTFkrNmj8QfHWr4vV9G5EgRC"})
+   "log/write" "rad:z4DiGJTFkrNmj8QfHWr4vV9G5EgRC"
+   "math/cos" "rad:z39ZE3TXtSgEsHketwNHmAdn9AzrG"
+   "math/sin" "rad:z3V5Cu6W19fQ8yBmDgxLc4dm5Toit"
+   "mmio/map" "rad:z3Pfx2pcf59cizdozsEEY1m6a2si3"
+   "motion/read" "rad:zhZe1g9AMiTBbL5MfqW59MnRfcps"
+   "net/connect" "rad:z2WMw5nSRLyv8B8vBs4RMmec7WaB7"
+   "net/transport" "rad:zmDR3paxbM73DcNvH2ssmZjidhDb"
+   "notify/show" "rad:z3oKTdfzdH59rYbfjLmmVt2aUQiLR"
+   "pci/config" "rad:z8G4LSaGWofnSDEWpSZXXzVJVmQe"
+   "random/bytes" "rad:zN54zqoakxpYM5E91ubN137A1UPP"
+   "render/galactic-frame" "rad:zqJghqCtnc6YMmnDFyvVDPVcbgUx"
+   "secret/use-postgresql-cancel"
+   "rad:z49wqJGXTgFrns2LwiH4xKUDz8Lao"
+   "secret/use-scram-sha256" "rad:z2W5aBnfjesEAdvwEFfoWsUWn26rV"
+   "time/now-days" "rad:zmLoczt7YwTvY6E9JspVRVdKjSdd"
+   "topic/publish" "rad:zsxMV2Zs4ZgMJ5H5xd2Z62wwoxYA"
+   "topic/subscribe" "rad:z4B6TCjQxVxktrSQwceuxWbfxZF4Y"
+   "wifi/info" "rad:zsNYPBzNRdcNfMDrpmvuRnaxKiT5"})
 
 (def capability-effects
   {"ledger/append" #{:storage-write :integrity-record}
@@ -255,6 +294,8 @@
         [{:problem :unexpected-authority}])
       (when-not expected
         [{:problem :unknown-capability :capability/id capability-id}])
+      (when-not (= 1 (:capability/version manifest))
+        [{:problem :unexpected-capability-version}])
       (when (and expected
                  (not= (:capability/repository expected)
                        (:capability/repository manifest)))
@@ -265,6 +306,10 @@
                        (:capability/radicle-rid manifest)))
         [{:problem :radicle-rid-mismatch
           :expected (:capability/radicle-rid expected)}])
+      (when-not (and (string? (:capability/radicle-rid manifest))
+                     (re-matches #"rad:z[1-9A-HJ-NP-Za-km-z]+"
+                                 (:capability/radicle-rid manifest)))
+        [{:problem :radicle-rid-required}])
       (when (and expected
                  (not= (:capability/imports expected)
                        (:capability/imports manifest)))
@@ -275,6 +320,13 @@
                        (:capability/effects manifest)))
         [{:problem :effect-surface-mismatch
           :expected (:capability/effects expected)}])
+      (when (and expected
+                 (not= (:capability/default-policy expected)
+                       (:capability/default-policy manifest)))
+        [{:problem :default-policy-mismatch
+          :expected (:capability/default-policy expected)}])
+      (when-not (= :contract-only (:capability/provider-status manifest))
+        [{:problem :provider-status-must-be-contract-only}])
       (when-not (empty? (:capability/dependencies manifest))
         [{:problem :capability-dependencies-forbidden}])
       (when-not (= :wasm-component (:format artifact))
