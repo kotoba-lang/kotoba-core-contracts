@@ -538,3 +538,40 @@
   (let [result (run-tests 'kotoba.core.contracts-test)]
     (when (pos? (+ (:fail result) (:error result)))
       (System/exit 1))))
+
+(deftest reference-implemented-math-sin-shape-is-admitted
+  (let [base (capability-repository/full-repository-manifest
+              (contracts/capability-contract) "math/sin")
+        implemented
+        (assoc base
+               :capability/provider-status :reference-implemented
+               :capability/artifact
+               (merge (:capability/artifact base)
+                      {:path "artifacts/provider.core.wasm"
+                       :sha256 (apply str (repeat 64 "a"))
+                       :signature :reference-unsigned
+                       :exports {"sin" {:params [:f32] :result :f32}}}))]
+    (is (= [] (capability-repository/validate-manifest
+               (contracts/capability-contract) implemented)))))
+
+(deftest reference-implemented-rejects-non-allowlisted-capability
+  (let [base (capability-repository/full-repository-manifest
+              (contracts/capability-contract) "http/fetch")
+        bad (assoc base
+                   :capability/provider-status :reference-implemented
+                   :capability/artifact
+                   (merge (:capability/artifact base)
+                          {:path "artifacts/provider.core.wasm"
+                           :sha256 (apply str (repeat 64 "a"))
+                           :signature :reference-unsigned
+                           :exports {"http_fetch" {:params [:i32] :result :i32}}}))]
+    (is (some #(= :reference-implemented-not-allowlisted (:problem %))
+              (capability-repository/validate-manifest
+               (contracts/capability-contract) bad)))))
+
+(deftest contract-only-rejects-artifact-sha256
+  (let [base (capability-repository/full-repository-manifest (contracts/capability-contract) "math/sin")]
+    (is (some #(= :contract-only-must-omit-sha256 (:problem %))
+              (capability-repository/validate-manifest
+               (assoc-in base [:capability/artifact :sha256]
+                         (apply str (repeat 64 "cd"))))))))

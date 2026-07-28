@@ -47,3 +47,18 @@ clojure -M -m scaffold-capability-repos /absolute/output/root
 The generator refuses to overwrite an existing directory. Generated packages
 are contract-only until a reviewed, signed, content-addressed Wasm component
 is published.
+
+## Reference-implemented providers
+
+Atomic packages may advance from `:contract-only` to `:reference-implemented`
+when they publish:
+
+- `artifacts/*.wasm` with matching `:sha256`
+- `:exports` describing actor:host field ABI
+- `:signature :reference-unsigned` (or a real signature map) for the pure-compute
+  allowlist (`math/sin`, `math/cos`, `hash/sha256`, …)
+
+Definition CIDs do **not** change when a package gains a reference provider —
+provider status and digests are outside the semantic definition block.
+Production signing remains a separate ceremony.
+
