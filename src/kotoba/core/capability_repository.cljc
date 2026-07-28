@@ -106,7 +106,7 @@
 (defn namespace-symbol [capability-id]
   (symbol
    (str "kotoba.capability."
-        (str/replace capability-id #"[/_-]" "."))))
+        (str/replace capability-id "/" "."))))
 
 (defn imports-by-capability []
   (reduce-kv

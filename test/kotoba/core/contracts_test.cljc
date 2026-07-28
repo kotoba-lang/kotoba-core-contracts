@@ -112,7 +112,9 @@
            (set (keys files))))
     (is (str/includes? (get files "deps.edn") sha))
     (is (str/includes? (get files "src/kotoba/capability/http/fetch.cljc")
-                       "kotoba.capability.http.fetch"))))
+                       "kotoba.capability.http.fetch"))
+    (is (= 'kotoba.capability.cc.cdx-query
+           (capability-repository/namespace-symbol "cc/cdx-query")))))
 
 (deftest envelope-must-name-exact-atomic-repositories
   (let [imports #{:clock-monotonic :sha256-hex :log-write}
