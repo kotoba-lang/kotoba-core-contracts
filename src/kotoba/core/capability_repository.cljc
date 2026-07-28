@@ -1,10 +1,15 @@
 (ns kotoba.core.capability-repository
   "Contract and catalog for one-authority-capability-per-repository packages."
-  (:require [clojure.set :as set]
+  (:require [cbor.core :as cbor]
+            [clojure.set :as set]
             [clojure.string :as str]
-            [kotoba.core.actor-capability :as actor-capability]))
+            [kotoba.core.actor-capability :as actor-capability]
+            [multiformats.core :as mf]))
 
 (def schema "kotoba.capability.repository.v1")
+(def definition-schema "kotoba.capability-definition.v1")
+(def definition-hash-contract
+  "kotoba.capability-definition.v1|dag-cbor|cidv1|sha2-256|name-independent|actor-host-v0")
 (def authority "kotoba-lang/kotoba-core-contracts")
 
 (def actor-host-capability-ids
@@ -171,28 +176,79 @@
      :approval-required
      :autonomous)))
 
+(defn- utf8-bytes [value]
+  #?(:clj (.getBytes ^String value "UTF-8")
+     :cljs (.encode (js/TextEncoder.) value)))
+
+(defn- stable-name [value]
+  (cond
+    (keyword? value) (subs (str value) 1)
+    (symbol? value) (str value)
+    :else (str value)))
+
+(defn- cid-link [cid]
+  (let [raw (seq (mf/cid->bytes cid))]
+    (cbor/tagged 42 #?(:clj (byte-array (cons 0 raw))
+                       :cljs (js/Uint8Array.
+                              (clj->js (vec (cons 0 raw))))))))
+
+(defn definition-hash-contract-cid
+  "Identity of the versioned hashing rules, separate from any capability."
+  []
+  (mf/cidv1-raw (utf8-bytes definition-hash-contract)))
+
+(defn definition-block
+  "Canonical semantic identity block for a capability.
+
+  Human names, repository locations, Radicle RIDs and provider availability
+  are deliberately absent. As in Kotoba's Unison-like codebase, those are
+  mutable discovery aliases; checked import/effect/policy meaning is identity."
+  [manifest]
+  (let [artifact (:capability/artifact manifest)]
+    {"schema" definition-schema
+     "version" 1
+     "abi" {"namespace" actor-capability/actor-host-namespace
+            "version" actor-capability/actor-host-version}
+     "imports" (mapv stable-name (sort (:capability/imports manifest)))
+     "effects" (mapv stable-name (sort (:capability/effects manifest)))
+     "defaultPolicy" (stable-name (:capability/default-policy manifest))
+     "artifactFormat" (stable-name (:format artifact))
+     "dependencies" []
+     "hashContract" (cid-link (definition-hash-contract-cid))}))
+
+(defn definition-cid
+  "Unison-like identity of the canonical capability meaning."
+  [manifest]
+  (mf/cidv1-dag-cbor (cbor/encode (definition-block manifest))))
+
+(defn- with-definition-identity [manifest]
+  (assoc manifest
+         :capability/hash-contract-cid (definition-hash-contract-cid)
+         :capability/definition-cid (definition-cid manifest)))
+
 (defn repository-manifest [capability-id]
   (let [imports (get (imports-by-capability) capability-id)
         effects (get (effects-by-capability) capability-id)]
     (when-not (seq imports)
       (throw (ex-info "unknown actor:host capability"
                       {:capability/id capability-id})))
-    {:schema schema
-     :authority authority
-     :capability/id capability-id
-     :capability/version 1
-     :capability/repository
-     (str "kotoba-lang/" (repository-name capability-id))
-     :capability/radicle-rid (get radicle-rids capability-id)
-     :capability/imports imports
-     :capability/effects effects
-     :capability/default-policy (default-policy effects)
-     :capability/provider-status :contract-only
-     :capability/dependencies #{}
-     :capability/artifact
-     {:format :wasm-component
-      :digest-required? true
-      :signature-required? true}}))
+    (with-definition-identity
+      {:schema schema
+       :authority authority
+       :capability/id capability-id
+       :capability/version 1
+       :capability/repository
+       (str "kotoba-lang/" (repository-name capability-id))
+       :capability/radicle-rid (get radicle-rids capability-id)
+       :capability/imports imports
+       :capability/effects effects
+       :capability/default-policy (default-policy effects)
+       :capability/provider-status :contract-only
+       :capability/dependencies #{}
+       :capability/artifact
+       {:format :wasm-component
+        :digest-required? true
+        :signature-required? true}})))
 
 (defn runtime-imports-by-capability
   "Group a capability_contract.edn host surface by capability ID, retaining
@@ -219,22 +275,23 @@
     (when-not effects
       (throw (ex-info "capability effects are not classified"
                       {:capability/id capability-id})))
-    {:schema schema
-     :authority authority
-     :capability/id capability-id
-     :capability/version 1
-     :capability/repository
-     (str "kotoba-lang/" (repository-name capability-id))
-     :capability/radicle-rid (get radicle-rids capability-id)
-     :capability/imports imports
-     :capability/effects effects
-     :capability/default-policy (default-policy capability-id effects)
-     :capability/provider-status :contract-only
-     :capability/dependencies #{}
-     :capability/artifact
-     {:format :wasm-component
-      :digest-required? true
-      :signature-required? true}}))
+    (with-definition-identity
+      {:schema schema
+       :authority authority
+       :capability/id capability-id
+       :capability/version 1
+       :capability/repository
+       (str "kotoba-lang/" (repository-name capability-id))
+       :capability/radicle-rid (get radicle-rids capability-id)
+       :capability/imports imports
+       :capability/effects effects
+       :capability/default-policy (default-policy capability-id effects)
+       :capability/provider-status :contract-only
+       :capability/dependencies #{}
+       :capability/artifact
+       {:format :wasm-component
+        :digest-required? true
+        :signature-required? true}})))
 
 (defn full-catalog [runtime-contract]
   (->> (:capability-ids runtime-contract)
@@ -257,8 +314,19 @@
          (mapv #(select-keys %
                             [:capability/id
                              :capability/version
+                             :capability/definition-cid
+                             :capability/hash-contract-cid
                              :capability/repository
                              :capability/radicle-rid])))))
+
+(defn resolve-definition-cid
+  "Resolve immutable semantic identity to its current discovery aliases.
+  Returns nil for an unknown CID; names never participate in the lookup key."
+  ([definition-cid]
+   (resolve-definition-cid (actor-host-catalog) definition-cid))
+  ([catalog definition-cid]
+   (some #(when (= definition-cid (:capability/definition-cid %)) %)
+         catalog)))
 
 (defn validate-envelope-repositories
   "Require an envelope to name exactly the repositories owning its imports."
@@ -296,6 +364,14 @@
         [{:problem :unknown-capability :capability/id capability-id}])
       (when-not (= 1 (:capability/version manifest))
         [{:problem :unexpected-capability-version}])
+      (when-not (= (definition-hash-contract-cid)
+                   (:capability/hash-contract-cid manifest))
+        [{:problem :capability-hash-contract-cid-mismatch
+          :expected (definition-hash-contract-cid)}])
+      (when-not (= (definition-cid manifest)
+                   (:capability/definition-cid manifest))
+        [{:problem :capability-definition-cid-mismatch
+          :expected (definition-cid manifest)}])
       (when (and expected
                  (not= (:capability/repository expected)
                        (:capability/repository manifest)))

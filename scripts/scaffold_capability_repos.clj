@@ -58,9 +58,13 @@
        "- imports: `" (pr-str (:capability/imports manifest)) "`\n"
        "- effects: `" (pr-str (:capability/effects manifest)) "`\n"
        "- default policy: `" (:capability/default-policy manifest) "`\n"
+       "- semantic definition CID: `" (:capability/definition-cid manifest) "`\n"
+       "- hash contract CID: `" (:capability/hash-contract-cid manifest) "`\n"
        "- provider status: `contract-only`\n\n"
-       "Importing this package does not grant runtime authority. Tamaki must\n"
-       "request it explicitly and Kototama must admit the sealed envelope.\n\n"
+       "The repository name is a discovery alias. The semantic definition CID\n"
+       "is the immutable import identity. Importing it does not grant runtime\n"
+       "authority: Tamaki must request it explicitly and Kototama must admit\n"
+       "the sealed envelope.\n\n"
        "```sh\nclojure -M:test\n```\n"))
 
 (defn repo-files [manifest sha]
