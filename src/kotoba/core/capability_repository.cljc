@@ -81,7 +81,14 @@
    "time/now-days" "rad:zmLoczt7YwTvY6E9JspVRVdKjSdd"
    "topic/publish" "rad:zsxMV2Zs4ZgMJ5H5xd2Z62wwoxYA"
    "topic/subscribe" "rad:z4B6TCjQxVxktrSQwceuxWbfxZF4Y"
-   "wifi/info" "rad:zsNYPBzNRdcNfMDrpmvuRnaxKiT5"})
+   "wifi/info" "rad:zsNYPBzNRdcNfMDrpmvuRnaxKiT5"
+   ;; --- app-* suite (ADR-2608035000) ---
+   "process/list" "rad:z2r9wvkLnzQdNqcKXA6e2vqpAMzXA"
+   "system/metrics" "rad:z2NHGfJUuENSHs1Pa6RUJG7VgqKKc"
+   "fs/browse" "rad:z3x5XVqB3dxsQ6bHwxNsgByjPmvkh"
+   "image/metadata" "rad:z2yi4fmconRcJqtH4qx1yjMyv2RcK"
+   "media/library" "rad:zNvpwyDHFodyZprmXMhmDr3fERRn"
+   "audio/playback" "rad:z38DYGKRM9wnd75WecgqwW8YzPNn3"})
 
 (def capability-effects
   {"ledger/append" #{:storage-write :integrity-record}
@@ -134,7 +141,22 @@
    "cc/cdx-query" #{:network-read}
    "cc/warc-extract" #{:network-read :storage-write}
    "corpus/append" #{:storage-write}
-   "corpus/publish" #{:network-write :external-communication :data-egress}})
+   "corpus/publish" #{:network-write :external-communication :data-egress}
+   ;; --- the kotoba-lang/app-* standard application suite (ADR-2608035000).
+   ;; :system-read is aggregate machine state -- load, memory pressure, how
+   ;; full a disk is. It is deliberately not :personal-data, because none of
+   ;; it says what anyone is doing. Enumerating processes does say that, so
+   ;; process/list carries both and system/metrics carries only the first.
+   "process/list" #{:system-read :personal-data}
+   "system/metrics" #{:system-read}
+   ;; Distinct from fs/app-data, which is an app's own private store. This is
+   ;; the user's filesystem: what is in a directory they chose.
+   "fs/browse" #{:storage-read :personal-data}
+   "image/metadata" #{:storage-read :personal-data}
+   "media/library" #{:storage-read :personal-data}
+   ;; Distinct from audio/io, which includes :sensor-read -- the microphone.
+   ;; A player that only plays must not be handed the ability to record.
+   "audio/playback" #{:device-write}})
 
 (def approval-required-capabilities
   #{"notify/show" "clipboard/text" "keychain/text" "contacts/read"
@@ -142,7 +164,11 @@
     "llm/infer" "motion/read" "audio/io" "ble/scan" "wifi/info"
     "net/connect" "crypto/tls" "net/transport" "component/http"
     "component/database" "secret/use-scram-sha256"
-    "secret/use-postgresql-cancel" "corpus/publish"})
+    "secret/use-postgresql-cancel" "corpus/publish"
+    ;; app-* suite: everything that can say what the person is doing or has.
+    ;; system/metrics and audio/playback are absent on purpose -- a CPU gauge
+    ;; and a play button should not each raise a consent prompt.
+    "process/list" "fs/browse" "image/metadata" "media/library"})
 
 (defn repository-name [capability-id]
   (str "capability-" (str/replace capability-id "/" "-")))

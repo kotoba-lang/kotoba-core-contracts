@@ -98,7 +98,7 @@
 (deftest full-atomic-capability-catalog-covers-runtime-authority
   (let [runtime-contract (contracts/capability-contract)
         catalog (capability-repository/full-catalog runtime-contract)]
-    (is (= 50 (count catalog)))
+    (is (= 56 (count catalog)))
     (is (= [] (capability-repository/validate-full-catalog
                runtime-contract catalog)))
     (is (= #{}
@@ -257,7 +257,11 @@
              ;; web-wide crawl (com-junkawasaki/root ADR-2607252400)。
              ;; **必ず末尾**であることがこのテストの意味 — 途中に挿入すると
              ;; 既にビルド済みの .wasm の import index が全部ずれる。
-             cc-cdx-query cc-warc-extract corpus-append corpus-publish]
+             cc-cdx-query cc-warc-extract corpus-append corpus-publish
+     ;; app-* suite (ADR-2608035000), appended -- never inserted, because an
+     ;; insertion shifts every existing .wasm import index.
+     process-list system-metrics fs-browse image-metadata media-library
+     audio-playback]
            (contracts/host-import-order contract)))))
 
 (deftest kami-engine-imports-registered

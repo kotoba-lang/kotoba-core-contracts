@@ -168,6 +168,17 @@
                   "cc/warc-extract" 248
                   "corpus/append" 249
                   "corpus/publish" 250
+                  ;; --- the kotoba-lang/app-* standard application suite
+                  ;; (ADR-2608035000). Split deliberately: reading how much
+                  ;; CPU or disk is in use must not require the right to read
+                  ;; which processes or files there are, and playing audio
+                  ;; must not require the right to enumerate a library.
+                  "process/list" 251
+                  "system/metrics" 252
+                  "fs/browse" 253
+                  "image/metadata" 254
+                  "media/library" 255
+                  "audio/playback" 256
                   }
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
@@ -287,6 +298,9 @@
   ;; --- web-wide crawl (ADR-2607252400). 既存 import の序数を動かさないよう
   ;; 必ず末尾に足す — 途中挿入は既存 .wasm の import index を全部ずらす。
   cc-cdx-query cc-warc-extract corpus-append corpus-publish
+  ;; --- app-* suite (ADR-2608035000). Appended, never inserted.
+  process-list system-metrics fs-browse image-metadata media-library
+  audio-playback
   ]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
@@ -1016,5 +1030,42 @@
                                 :capability "corpus/publish"
                                 ;; (message-ptr message-len)
                                 :params [:i32 :i32]
+                                :result :i32}
+                ;; --- app-* suite (ADR-2608035000) ---
+                process-list {:module "kotoba"
+                              :field "process_list"
+                              :capability "process/list"
+                              ;; (out-ptr out-len) -> written length
+                              :params [:i32 :i32]
+                              :result :i32}
+                system-metrics {:module "kotoba"
+                                :field "system_metrics"
+                                :capability "system/metrics"
+                                ;; (kind out-ptr out-len) -> written length
+                                :params [:i32 :i32 :i32]
+                                :result :i32}
+                fs-browse {:module "kotoba"
+                           :field "fs_browse"
+                           :capability "fs/browse"
+                           ;; (dir-ptr dir-len out-ptr out-len)
+                           :params [:i32 :i32 :i32 :i32]
+                           :result :i32}
+                image-metadata {:module "kotoba"
+                                :field "image_metadata"
+                                :capability "image/metadata"
+                                ;; (path-ptr path-len out-ptr out-len)
+                                :params [:i32 :i32 :i32 :i32]
+                                :result :i32}
+                media-library {:module "kotoba"
+                               :field "media_library"
+                               :capability "media/library"
+                               ;; (scope-ptr scope-len out-ptr out-len)
+                               :params [:i32 :i32 :i32 :i32]
+                               :result :i32}
+                audio-playback {:module "kotoba"
+                                :field "audio_playback"
+                                :capability "audio/playback"
+                                ;; (op track-ptr track-len) -> status
+                                :params [:i32 :i32 :i32]
                                 :result :i32}
                 }}
