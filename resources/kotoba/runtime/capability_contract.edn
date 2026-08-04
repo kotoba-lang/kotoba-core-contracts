@@ -179,6 +179,15 @@
                   "image/metadata" 254
                   "media/library" 255
                   "audio/playback" 256
+
+                  ;; kotoba-lang/haishin — publishing to an external social
+                  ;; platform under an identity. Deliberately NOT folded into
+                  ;; http/post: the authority being granted is not "write to a
+                  ;; network socket" but "make this content publicly visible as
+                  ;; us, on a service whose deletion semantics we do not
+                  ;; control". A grant of http/post to reach an internal API
+                  ;; must not silently also authorise a public post.
+                  "social/publish" 257
                   }
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
@@ -301,6 +310,8 @@
   ;; --- app-* suite (ADR-2608035000). Appended, never inserted.
   process-list system-metrics fs-browse image-metadata media-library
   audio-playback
+  ;; --- social/publish (kotoba-lang/haishin). Appended, never inserted.
+  social-publish social-publish-receipt
   ]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
@@ -1068,4 +1079,25 @@
                                 ;; (op track-ptr track-len) -> status
                                 :params [:i32 :i32 :i32]
                                 :result :i32}
+
+                ;; social/publish is two imports, not one, because publishing
+                ;; and learning what happened are separately consequential.
+                ;; A guest that may publish must also be able to record the
+                ;; receipt, or the audit trail ends at "we tried"; but a host
+                ;; that hands back the receipt in the same call would have to
+                ;; block the guest for the whole upload.
+                social-publish {:module "kotoba"
+                                :field "social_publish"
+                                :capability "social/publish"
+                                ;; (target-ptr target-len payload-ptr payload-len)
+                                ;; -> >=0 receipt handle, <0 error code
+                                :params [:i32 :i32 :i32 :i32]
+                                :result :i32}
+                social-publish-receipt {:module "kotoba"
+                                        :field "social_publish_receipt"
+                                        :capability "social/publish"
+                                        ;; (handle out-ptr out-cap)
+                                        ;; -> bytes written, <0 error code
+                                        :params [:i32 :i32 :i32]
+                                        :result :i32}
                 }}

@@ -98,7 +98,8 @@
 (deftest full-atomic-capability-catalog-covers-runtime-authority
   (let [runtime-contract (contracts/capability-contract)
         catalog (capability-repository/full-catalog runtime-contract)]
-    (is (= 56 (count catalog)))
+    ;; 56 + social/publish (kotoba-lang/haishin)
+    (is (= 57 (count catalog)))
     (is (= [] (capability-repository/validate-full-catalog
                runtime-contract catalog)))
     (is (= #{}
@@ -261,7 +262,9 @@
      ;; app-* suite (ADR-2608035000), appended -- never inserted, because an
      ;; insertion shifts every existing .wasm import index.
      process-list system-metrics fs-browse image-metadata media-library
-     audio-playback]
+     audio-playback
+     ;; social/publish (kotoba-lang/haishin), appended for the same reason.
+     social-publish social-publish-receipt]
            (contracts/host-import-order contract)))))
 
 (deftest kami-engine-imports-registered

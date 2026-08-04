@@ -88,7 +88,11 @@
    "fs/browse" "rad:z3x5XVqB3dxsQ6bHwxNsgByjPmvkh"
    "image/metadata" "rad:z2yi4fmconRcJqtH4qx1yjMyv2RcK"
    "media/library" "rad:zNvpwyDHFodyZprmXMhmDr3fERRn"
-   "audio/playback" "rad:z38DYGKRM9wnd75WecgqwW8YzPNn3"})
+   "audio/playback" "rad:z38DYGKRM9wnd75WecgqwW8YzPNn3"
+   ;; Registered on the gad seed 2026-08-04 and verified by fetch, per
+   ;; com-junkawasaki/root ADR-2607259000 — an unverified RID is worse than
+   ;; none, and 3,621 fabricated ones were removed once already.
+   "social/publish" "rad:zvDQMMaMdFiFVFsuCevRKwCzmZUy"})
 
 (def capability-effects
   {"ledger/append" #{:storage-write :integrity-record}
@@ -156,7 +160,14 @@
    "media/library" #{:storage-read :personal-data}
    ;; Distinct from audio/io, which includes :sensor-read -- the microphone.
    ;; A player that only plays must not be handed the ability to record.
-   "audio/playback" #{:device-write}})
+   "audio/playback" #{:device-write}
+   ;; Publishing to an external social platform. :external-communication is
+   ;; what separates this from http/post's #{:data-egress :network-write}: the
+   ;; bytes do not merely leave, they arrive in front of people, attributed to
+   ;; us. The effect vocabulary has no word for "irreversible" -- retraction is
+   ;; a platform's promise, not ours to make -- so that part is carried by the
+   ;; :approval-required policy below and stated here rather than encoded.
+   "social/publish" #{:network-write :data-egress :external-communication}})
 
 (def approval-required-capabilities
   #{"notify/show" "clipboard/text" "keychain/text" "contacts/read"
@@ -168,7 +179,12 @@
     ;; app-* suite: everything that can say what the person is doing or has.
     ;; system/metrics and audio/playback are absent on purpose -- a CPU gauge
     ;; and a play button should not each raise a consent prompt.
-    "process/list" "fs/browse" "image/metadata" "media/library"})
+    "process/list" "fs/browse" "image/metadata" "media/library"
+    ;; Not derivable from effects alone: default-policy already returns
+    ;; :approval-required for anything carrying :network-write. Listed anyway
+    ;; so that the intent survives a future relaxation of that rule -- a public
+    ;; post under our identity should require approval on its own merits.
+    "social/publish"})
 
 (defn repository-name [capability-id]
   (str "capability-" (str/replace capability-id "/" "-")))
