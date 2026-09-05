@@ -130,6 +130,17 @@
                   ;; (duplicate map key), not just redundant.
                   "data/cbor" 245
                   "data/json" 246
+                  ;; kbb ops-script surface (ADR-2607181900 readiness gate):
+                  ;; data/edn parses EDN text into an interpreter-native
+                  ;; Clojure value (the kbb host slice has no linear memory,
+                  ;; so the guest passes the EDN text as a plain string and
+                  ;; receives the parsed value directly). Resource scope =
+                  ;; nothing external; the bytes come entirely from the
+                  ;; guest's own argument, so the kind-level grant is the
+                  ;; whole boundary (no per-name narrowing, mirroring
+                  ;; json-encode's scope shape). Replace the clojure.edn
+                  ;; reader in kbb ops scripts (facade/tasks.edn checks).
+                  "data/edn" 260
                   ;; kotoba-lang/kototama's actor:host ABI, THIRD wave
                   ;; (com-junkawasaki/root ADR-2607231022's Phase A left this
                   ;; as an explicit follow-up, closed here): `http_post`
@@ -332,6 +343,7 @@
   ;; --- kbb ops-script surface (ADR-2607181900). Appended, never inserted.
   env-read
   proc-exec
+  edn-read
   ]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
@@ -1009,6 +1021,20 @@
                                     :capability "data/json"
                                     :params [:i32 :i32 :i32 :i32 :i32 :i32]
                                     :result :i32}
+                ;; edn-read(edn-ptr, edn-len) -> parsed value. The kbb ops
+                ;; surface's replacement for the clojure.edn reader in
+                ;; script ports (facade/tasks.edn checks, deps.edn pin
+                ;; audits). Interpreter slice (no linear memory): the guest
+                ;; passes the EDN text as a plain string and receives the
+                ;; fully-parsed Clojure value directly. Malformed EDN fails
+                ;; closed with an :error receipt, never a partial value --
+                ;; a guest cannot distinguish round-trip-valid from
+                ;; non-canonical, so the reader is the one honest boundary.
+                edn-read {:module "kotoba"
+                          :field "edn_read"
+                          :capability "data/edn"
+                          :params [:i32 :i32]
+                          :result :value}
                 ;; kototama actor:host ABI, THIRD wave (com-junkawasaki/root,
                 ;; this ADR) -- see this file's `data/cbor`/`data/json`
                 ;; section comment above for why this is a NEW host-import
