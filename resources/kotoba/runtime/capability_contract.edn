@@ -196,6 +196,15 @@
                   ;; reads nothing -- same resource-scope shape as
                   ;; :fs/app-data paths.
                   "env/read" 258
+                  ;; kbb ops-script surface (ADR-2607181900 readiness gate
+                  ;; slice 2): proc/exec runs ONE allowlisted command with a
+                  ;; FIXED argument vector. Resource scope = exact command
+                  ;; names (bare executable names, no paths, no shells). The
+                  ;; argument vector and cwd are policy-side literals, not
+                  ;; guest-supplied: the guest cannot compose arbitrary
+                  ;; invocations, only choose among the fixed grants. No
+                  ;; shell is ever spawned -- argv goes straight to exec.
+                  "proc/exec" 259
                   }
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
@@ -322,6 +331,7 @@
   social-publish social-publish-receipt
   ;; --- kbb ops-script surface (ADR-2607181900). Appended, never inserted.
   env-read
+  proc-exec
   ]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
@@ -1081,6 +1091,18 @@
                           ;; plain literal name and returns the plain string.
                           :params [:i32 :i32]
                           :result :i32}
+                proc-exec {:module "kotoba"
+                           :field "proc_exec"
+                           :capability "proc/exec"
+                           ;; (index-ptr index-len) -> the guest names a GRANT
+                           ;; INDEX (an i64 decimal string) into the policy's
+                           ;; fixed invocation table, not a command line. The
+                           ;; host looks the invocation up in the policy, so
+                           ;; the guest supplies zero command bytes. Result
+                           ;; i32 = 0 on success (exit code flows via the
+                           ;; shared result convention), non-zero on denial.
+                           :params [:i32 :i32]
+                           :result :i32}
                 image-metadata {:module "kotoba"
                                 :field "image_metadata"
                                 :capability "image/metadata"
