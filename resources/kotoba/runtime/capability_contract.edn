@@ -188,6 +188,14 @@
                   ;; control". A grant of http/post to reach an internal API
                   ;; must not silently also authorise a public post.
                   "social/publish" 257
+                  ;; kbb ops-script surface (ADR-2607181900 readiness gate):
+                  ;; env-read grants a guest a named process-environment
+                  ;; variable lookup. Resource scope = the exact env var
+                  ;; NAMES the policy grants (fail-closed default #{}), so a
+                  ;; policy that grants :env/read without naming variables
+                  ;; reads nothing -- same resource-scope shape as
+                  ;; :fs/app-data paths.
+                  "env/read" 258
                   }
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
@@ -312,6 +320,8 @@
   audio-playback
   ;; --- social/publish (kotoba-lang/haishin). Appended, never inserted.
   social-publish social-publish-receipt
+  ;; --- kbb ops-script surface (ADR-2607181900). Appended, never inserted.
+  env-read
   ]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
@@ -1061,6 +1071,16 @@
                            ;; (dir-ptr dir-len out-ptr out-len)
                            :params [:i32 :i32 :i32 :i32]
                            :result :i32}
+                env-read {:module "kotoba"
+                          :field "env_read"
+                          :capability "env/read"
+                          ;; (name-ptr name-len) -> the value flows through the
+                          ;; interpreter slice's string-result convention (the
+                          ;; CLJS/wasm backends carry it via the shared
+                          ;; string ABI); kbb's interpreter handler takes the
+                          ;; plain literal name and returns the plain string.
+                          :params [:i32 :i32]
+                          :result :i32}
                 image-metadata {:module "kotoba"
                                 :field "image_metadata"
                                 :capability "image/metadata"
