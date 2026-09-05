@@ -46,6 +46,7 @@
    "crypto/tls" "rad:z3Rg9Wmr1RiGapTg8NzVRCg46teq8"
    "data/cbor" "rad:z24o5QsGMa3pkGEuqP48XSMDEPdFN"
    "data/json" "rad:z3yzK8jyMmrUaYuzMDfFH1W5k8H1a"
+   "data/edn" "rad:z2MzJmP9yX8QBVfUaGzNfQbCmLp4K"
    "dma/map" "rad:zR1KKTVy51jQ9vHzLw6RoCfYi43K"
    "fs/app-data" "rad:z51vNMpisTEAsj9pHU6KQuUwfQZ3"
    "gpu/clear" "rad:z32P2Gc2pvSXCqdGEiTS4c3PMwfbY"
@@ -142,6 +143,7 @@
    "secret/use-postgresql-cancel" #{:network-write :secret}
    "data/cbor" #{:codec}
    "data/json" #{:codec}
+   "data/edn" #{:codec}
    "cc/cdx-query" #{:network-read}
    "cc/warc-extract" #{:network-read :storage-write}
    "corpus/append" #{:storage-write}

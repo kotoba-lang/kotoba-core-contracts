@@ -264,8 +264,10 @@
      process-list system-metrics fs-browse image-metadata media-library
      audio-playback
      ;; social/publish (kotoba-lang/haishin), appended for the same reason.
-     social-publish social-publish-receipt]
-           (contracts/host-import-order contract)))))
+         social-publish social-publish-receipt
+         ;; kbb ops-script surface (ADR-2607181900), appended -- never inserted.
+         env-read proc-exec edn-read]
+               (contracts/host-import-order contract)))))
 
 (deftest kami-engine-imports-registered
   ;; kami-* game-engine ECS surface (one shared "kami/engine" capability,
@@ -370,6 +372,23 @@
       (is (= "kotoba" (get-in contract [:host-imports op :module])) op)
       (is (= params (get-in contract [:host-imports op :params])) op)
       (is (= :i32 (get-in contract [:host-imports op :result])) op))))
+
+(deftest edn-read-host-import-registered
+  ;; kbb ops-script surface (ADR-2607181900 readiness gate): data/edn is
+  ;; the kbb replacement for the clojure.edn reader in script ports
+  ;; (facade/tasks.edn checks, deps.edn pin audits). Like env-read /
+  ;; proc-exec it is appended to host-import-order (never inserted) and
+  ;; its interpreter-slice result is a parsed VALUE, not an :i32 codec
+  ;; word -- the host slice has no linear memory to marshal a buffer
+  ;; through, so the guest passes EDN text and gets the value directly.
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (is (= 260 (contracts/capability-id contract "data/edn")))
+    (is (= "data/edn" (get-in contract [:host-imports 'edn-read :capability])))
+    (is (= "edn_read" (get-in contract [:host-imports 'edn-read :field])))
+    (is (= "kotoba" (get-in contract [:host-imports 'edn-read :module])))
+    (is (= :value (get-in contract [:host-imports 'edn-read :result])))
+    (is (some #{'edn-read} (contracts/host-import-order contract)))))
 
 (deftest http-post-headers-host-import-registered
   ;; kototama.tender's actor:host ABI, THIRD wave (com-junkawasaki/root, this
