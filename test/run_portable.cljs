@@ -163,11 +163,42 @@
       {:label label :ok true :accept? false
        :detail (str "rejected: " (:message r))})))
 
+
+;; ── corpus 3: manifest integrity ─────────────────────────────────────────────
+
+(defn- manifest-integrity-cases []
+  (let [good (read-edn "lang/package-conformance/positive/self-consistent-manifest.edn")
+        ;; Same manifest with one substantive field changed and :manifest-cid
+        ;; left alone -- exactly the tamper `package-manifest-error` cannot
+        ;; see, because the signature is over the DECLARED cid and that field
+        ;; was not touched.
+        tampered (assoc good :kotoba.package/capabilities [:graph-read])
+        legacy (read-edn "lang/package-conformance/positive/package-manifest.edn")]
+    [{:label "manifest/self-consistent manifest passes shape and signature"
+      :accept? true :run #(contract/package-manifest-error good)}
+     {:label "manifest/self-consistent manifest passes integrity"
+      :accept? true :run #(contract/manifest-integrity-error good)}
+     {:label "manifest/a field changed after signing still passes shape+signature"
+      :accept? true :run #(contract/package-manifest-error tampered)}
+     {:label "manifest/...and is caught by integrity"
+      :accept? false :because "manifest cid does not match manifest content"
+      :run #(contract/manifest-integrity-error tampered)}
+     ;; A standing finding, pinned rather than hidden: this repository's own
+     ;; long-standing positive fixture declares a :manifest-cid that is not
+     ;; its content's CID. It was never wrong under the checks that existed --
+     ;; integrity lived in a `.clj` layer one repo away and nothing here ran
+     ;; it. Asserting the CURRENT state means the day someone regenerates that
+     ;; fixture, this line fails and says so, instead of the discrepancy
+     ;; staying invisible in both directions.
+     {:label "manifest/the legacy positive fixture is not self-consistent"
+      :accept? false :because "manifest cid does not match manifest content"
+      :run #(contract/manifest-integrity-error legacy)}]))
+
 ;; ── report ───────────────────────────────────────────────────────────────────
 
 (let [conformance (conformance-cases)
       v (signature-vectors)
-      signatures (signature-cases v)
+      signatures (into (signature-cases v) (manifest-integrity-cases))
       results (into (mapv run-conformance-case conformance)
                     (mapv run-signature-case signatures))
       expected (+ (count conformance) (count signatures))
