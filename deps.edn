@@ -1,8 +1,18 @@
 {:paths ["src" "resources" "." "scripts"]
  :deps {org.clojure/clojure {:mvn/version "1.12.4"}
-        io.github.kotoba-lang/dag-cbor
-        {:git/url "https://github.com/kotoba-lang/dag-cbor.git"
-         :git/sha "58144e81ccdf7a82367085c66ea21ca84a1a7ddb"}
+        ;; Renamed upstream: kotoba-lang/dag-cbor is kotoba-lang/org-ietf-cbor.
+        ;; The old name resolved only through GitHub's redirect; a redirect is
+        ;; not a dependency declaration, so this pin went on working while
+        ;; naming a repository that no longer exists, and nothing failed to say
+        ;; so. 58144e81 is the same commit under either name -- the tree does
+        ;; not change here, the name does. This file is where most of the fleet
+        ;; first reaches the codec, so the old spelling propagated outward from
+        ;; it; and tools.deps dedupes by the coordinate SYMBOL, so a consumer
+        ;; that also names the new one ends up with two cbor.core at two shas.
+        ;; The :git/url is dropped rather than corrected: io.github.<org>/<name>
+        ;; derives it, and a separate URL is the thing that hid the rename.
+        io.github.kotoba-lang/org-ietf-cbor
+        {:git/sha "58144e81ccdf7a82367085c66ea21ca84a1a7ddb"}
         io.github.kotoba-lang/io-multiformats
         {:git/url "https://github.com/kotoba-lang/io-multiformats.git"
          :git/sha "eec3ee85c458ea830be94518b9a42f4a8f1aee40"}
