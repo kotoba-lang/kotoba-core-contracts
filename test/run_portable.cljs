@@ -31,7 +31,19 @@
             [clojure.string :as str]
             [kotoba.lang.package-contract :as contract]))
 
-(def ^:private root (or (second *command-line-args*) "."))
+(def ^:private root
+  ;; `(second *command-line-args*)` -- measured 2026-09-06: nbb does NOT put
+  ;; the script in this vector (`nbb x.cljs alpha beta` => ("alpha" "beta")),
+  ;; so `second` was the SECOND argument and the documented `[root]` was
+  ;; silently ignored. It looked correct because every caller so far ran from
+  ;; the repository root, where the "." default is the right answer -- an
+  ;; argument that is accepted and discarded, agreeing with the truth by
+  ;; accident.
+  (first *command-line-args*))
+
+(when (and root (not (.existsSync fs root)))
+  (.error js/console (str "REFUSED: root does not exist " (pr-str root)))
+  (.exit js/process 2))
 
 (defn- refuse! [message data]
   (.error js/console (str "REFUSED: " message " " (pr-str data)))
@@ -40,7 +52,7 @@
   (.exit js/process 2))
 
 (defn- read-edn [relative]
-  (let [p (.join path root relative)]
+  (let [p (if root (.join path root relative) relative)]
     (when-not (.existsSync fs p)
       (refuse! "conformance file is missing" {:path relative}))
     (try
