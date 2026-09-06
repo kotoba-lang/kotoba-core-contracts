@@ -58,3 +58,40 @@
                       [{:did (:signer-did vectors) :alg :rsa
                         :sig (:valid-sig vectors)}]
                       (:manifest-cid vectors)))))))
+
+(def self-consistent
+  (edn/read-string
+   (slurp (io/file "lang/package-conformance/positive/self-consistent-manifest.edn"))))
+
+(deftest manifest-cid-is-computed-identically-on-both-runtimes
+  (testing "the fixture's declared cid IS its content cid, so agreeing with it
+            is agreeing with the runtime that generated it (nbb)"
+    (is (= (get-in self-consistent [:kotoba.package/source :manifest-cid])
+           (contract/compute-manifest-cid self-consistent))
+        "JVM and Node disagree on canonical DAG-CBOR manifest hashing")
+    (is (nil? (contract/manifest-integrity-error self-consistent)))
+    (is (nil? (contract/package-manifest-error self-consistent)))))
+
+(deftest integrity-catches-what-signature-verification-cannot
+  ;; The two checks are not redundant, and this is the demonstration: the same
+  ;; tamper passes one and fails the other. A signature attests to the
+  ;; DECLARED :manifest-cid, so mutating any other field leaves it valid.
+  (let [tampered (assoc self-consistent :kotoba.package/capabilities [:graph-read])]
+    (is (nil? (contract/package-manifest-error tampered))
+        "shape+signature should still pass -- that is the gap")
+    (is (= "manifest cid does not match manifest content"
+           (:message (contract/manifest-integrity-error tampered))))))
+
+(deftest the-legacy-positive-fixture-is-not-self-consistent
+  ;; Pinned as a standing finding rather than left invisible. Measured
+  ;; 2026-09-06: positive/package-manifest.edn declares
+  ;; bafyreia4kejp3eqgyv3fbb6yrxkzemeqehopntqntvgkcq7maqltxrh57q and hashes to
+  ;; bafyreifyfaykagxwlw6v6rqs4msnavzcuvfjvbhkvpwcxdvwcaggqj2lci. It was never
+  ;; wrong under the checks this repository ran -- integrity lived in
+  ;; kotoba.security.package-admission, one repo away and `.clj`-only. If the
+  ;; fixture is ever regenerated, this test fails and names the change.
+  (let [legacy (edn/read-string
+                (slurp (io/file "lang/package-conformance/positive/package-manifest.edn")))]
+    (is (nil? (contract/package-manifest-error legacy)))
+    (is (= "manifest cid does not match manifest content"
+           (:message (contract/manifest-integrity-error legacy))))))

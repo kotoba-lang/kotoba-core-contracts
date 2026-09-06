@@ -1,5 +1,6 @@
 (ns kotoba.lang.package-contract
-  (:require [clojure.set :as set]
+  (:require [cbor.core :as cbor]
+            [clojure.set :as set]
             [clojure.string :as str]
             [multiformats.core :as mf]
             [ed25519.core :as ed25519])
@@ -224,6 +225,67 @@
                   (invalid "signature bytes required" {:signature sig}))
                 (ed25519-signature-error (:sig sig) (:did sig) (signed-bytes manifest-cid))))
           sigs)))
+
+(defn manifest-without-self-cid
+  "MANIFEST with its own self-declared `:manifest-cid` removed, AND its
+  `:kotoba.package/signatures` removed. Both are content a manifest's CID is
+  computed OVER TOP OF, never included IN.
+
+  `:manifest-cid`'s exclusion is the obvious case -- for the same reason a
+  Git commit id never covers itself. `:signatures`' exclusion is forced by
+  `signatures-error` doing real verification: a signer's `:sig` attests to
+  this manifest's `:manifest-cid`, so if the CID also covered `:signatures`,
+  a self-consistent manifest would require solving a circular fixed point.
+  Excluding signatures breaks the cycle: the CID is a pure function of the
+  substantive fields, computed once, then signed, and signatures can be added
+  or rotated afterwards without changing what the CID covers.
+
+  KNOWN LIMITATION, carried over verbatim from the `.clj` original because it
+  is a property of the design and not of the port: since `:manifest-cid` does
+  not cover `:signatures`, the CID cannot bind WHICH or HOW MANY signers
+  vouched for this content. `signatures-error` verifies that every signature
+  PRESENT is individually valid; nothing requires a minimum count, a quorum,
+  or membership in an authorised set, so a manifest with one legitimate
+  co-signer's entry silently removed (CID untouched) still passes. An n-of-m
+  policy needs its own binding mechanism independent of `:manifest-cid`."
+  [manifest]
+  (-> manifest
+      (update :kotoba.package/source dissoc :manifest-cid)
+      (dissoc :kotoba.package/signatures)))
+
+(defn compute-manifest-cid
+  "The real CIDv1 (canonical DAG-CBOR + sha2-256) of MANIFEST's actual
+  content, excluding its own self-declared `:manifest-cid`."
+  [manifest]
+  (mf/cidv1-dag-cbor (cbor/encode (manifest-without-self-cid manifest))))
+
+(defn manifest-integrity-error
+  "nil if MANIFEST's self-declared `:manifest-cid` matches what its content
+  actually hashes to; a contract-shaped error otherwise.
+
+  This closes the gap `package-manifest-error` names in its own docstring: on
+  its own, that function binds a valid signature to the manifest's SELF-
+  DECLARED `:manifest-cid`, so a manifest whose other fields were mutated
+  after signing -- with `:manifest-cid` left untouched -- still passes. The
+  two compose into signer-attests-to-CID plus CID-matches-content; neither
+  alone is a content binding.
+
+  PORTABLE, and here rather than in the file-I/O layer, because a manifest's
+  subject IS the in-memory manifest. That is what separates it from
+  `tree-cid-error`, whose subject -- an actual source tree -- is not part of
+  the data this kernel receives and therefore cannot be recomputed here.
+
+  It was available only under `:clj`, in `kotoba.security.package-admission`,
+  which is why a Node consumer of a package lock could check a signature but
+  not what the signature was over. `kotoba.compiler.nbb.package-lock` calls
+  this."
+  [manifest]
+  (let [declared (get-in manifest [:kotoba.package/source :manifest-cid])]
+    (when (cid? declared)
+      (let [computed (compute-manifest-cid manifest)]
+        (when (not= declared computed)
+          (invalid "manifest cid does not match manifest content"
+                   {:declared declared :computed computed}))))))
 
 (defn tree-cid-error
   "Real content-integrity check for a source tree -- the :tree-cid analogue
