@@ -397,13 +397,79 @@
 
 (def reference-implemented-allowlist
   "Pure / ambient-free capabilities permitted to ship reference providers
-  without production signing yet."
+  WITHOUT production signing.
+
+  The concession is `:signature :reference-unsigned`, and it is safe for these
+  eight because none of them can reach anything: an unsigned provider for
+  `math/cos` misleads nobody about what it will do to the world.
+
+  So the allowlist is a condition on the CONCESSION, not on effectful
+  capabilities as such. A capability that ships a real Ed25519 attestation
+  (`amu sign-output-set`, `kotoba.compiler.nbb.output-attestation`) does not
+  need to be here — that is what `attested-artifact-problems` decides, and it
+  is the only path by which something with `:network-read` can ever be
+  `:reference-implemented`."
   #{"math/sin" "math/cos" "hash/sha256" "data/cbor" "data/json"
     "clock/monotonic" "random/bytes" "time/now-days"})
 
 (defn- sha256-hex-string?
   [value]
   (and (string? value) (boolean (re-matches #"[0-9a-f]{64}" value))))
+
+(def ^:private attestation-statement-keys
+  "The statement fields `kotoba.compiler.nbb.output-attestation` signs.
+
+  Restated here rather than required from amu: this namespace is the pure
+  `.cljc` authority and must validate a manifest with no compiler, no crypto
+  and no filesystem. It checks the SHAPE and the binding; whether the signature
+  verifies is `amu verify-output-set`'s answer and cannot be given here."
+  #{:format :output-set-sha256 :provenance-sha256 :artifact-sha256
+    :target :signer :public-key :not-before :expires})
+
+(defn- attestation-envelope?
+  [value]
+  (and (map? value)
+       (= :kotoba.output-attestation/v1 (:format value))
+       (map? (:statement value))
+       (string? (:signature value))
+       (= attestation-statement-keys (set (keys (:statement value))))))
+
+(defn- attested-artifact-problems
+  "Problems with an artifact that claims a real attestation.
+
+  The binding check is the load-bearing one: an attestation whose
+  `:artifact-sha256` is not the artifact's own `:sha256` is a signature over
+  something else, presented as a signature over this. That is the attack, and
+  it is decidable without any crypto — which is why this namespace can decide
+  it and should."
+  [artifact]
+  (let [att (:signature artifact)
+        statement (:statement att)]
+    (vec
+     (concat
+      (when-not (attestation-envelope? att)
+        [{:problem :attestation-envelope-malformed
+          :hint ":format :kotoba.output-attestation/v1 with :statement and :signature"}])
+      (when (attestation-envelope? att)
+        (concat
+         (when-not (= :kotoba.output-attestation-statement/v1 (:format statement))
+           [{:problem :attestation-statement-format
+             :format (:format statement)}])
+         (when-not (sha256-hex-string? (:artifact-sha256 statement))
+           [{:problem :attestation-artifact-sha256-malformed}])
+         (when-not (= (:artifact-sha256 statement) (:sha256 artifact))
+           [{:problem :attestation-does-not-bind-this-artifact
+             :attested (:artifact-sha256 statement)
+             :declared (:sha256 artifact)}])
+         (when-not (and (string? (:signer statement)) (seq (:signer statement)))
+           [{:problem :attestation-signer-required}])
+         (when-not (and (string? (:public-key statement)) (seq (:public-key statement)))
+           [{:problem :attestation-public-key-required}])
+         (when-not (and (int? (:not-before statement)) (int? (:expires statement))
+                        (< (:not-before statement) (:expires statement)))
+           [{:problem :attestation-window-invalid
+             :not-before (:not-before statement)
+             :expires (:expires statement)}])))))))
 
 (defn- validate-provider-artifact
   "Shared artifact + provider-status rules for atomic capability packages."
@@ -428,9 +494,17 @@
            [{:problem :contract-only-must-omit-artifact-path}])))
       (when (= :reference-implemented status)
         (concat
-         (when-not (contains? reference-implemented-allowlist capability-id)
+         ;; The allowlist gates the UNSIGNED concession, not effectful
+         ;; capabilities as such. Something that carries a real attestation has
+         ;; a publisher who can be revoked, which is the property the allowlist
+         ;; was standing in for.
+         (when (and (= :reference-unsigned (:signature artifact))
+                    (not (contains? reference-implemented-allowlist capability-id)))
            [{:problem :reference-implemented-not-allowlisted
-             :capability/id capability-id}])
+             :capability/id capability-id
+             :hint "sign the artifact (amu sign-output-set) or stay :contract-only"}])
+         (when-not (= :reference-unsigned (:signature artifact))
+           (attested-artifact-problems artifact))
          (when-not (sha256-hex-string? (:sha256 artifact))
            [{:problem :reference-implemented-sha256-required}])
          (when-not (and (string? (:path artifact))
@@ -440,7 +514,7 @@
          (when-not (or (map? (:signature artifact))
                        (= :reference-unsigned (:signature artifact)))
            [{:problem :reference-implemented-signature-required
-             :hint ":reference-unsigned or signature map"}])
+             :hint ":reference-unsigned or an attestation envelope"}])
          (when-not (and (map? (:exports artifact))
                         (seq (:exports artifact)))
            [{:problem :reference-implemented-exports-required}])))))))

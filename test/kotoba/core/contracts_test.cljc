@@ -601,3 +601,81 @@
               (capability-repository/validate-manifest
                (assoc-in base [:capability/artifact :sha256]
                          (apply str (repeat 64 "cd"))))))))
+
+;; ---------------------------------------------------------------------------
+;; an effectful capability may be reference-implemented IF it is attested
+;; ---------------------------------------------------------------------------
+
+(def ^:private attested-artifact
+  {:format :wasm-component
+   :digest-required? true
+   :signature-required? true
+   :path "artifacts/provider.core.wasm"
+   :sha256 "0577715ba28cd197c5556da21b3518de0dab89a4500f24dd482fc52e132c7bfb"
+   :exports {"http_fetch" {:params [:i32 :i32 :i32 :i32] :result :i32}}
+   :signature
+   {:format :kotoba.output-attestation/v1
+    :signature "AAAA"
+    :statement {:format :kotoba.output-attestation-statement/v1
+                :output-set-sha256 (apply str (repeat 64 "a"))
+                :provenance-sha256 (apply str (repeat 64 "b"))
+                :artifact-sha256 "0577715ba28cd197c5556da21b3518de0dab89a4500f24dd482fc52e132c7bfb"
+                :target "wasm32-kotoba-v1"
+                :signer "did:key:zSigner"
+                :public-key "MCowBQYDK2VwAyEA"
+                :not-before 1000
+                :expires 2000}}})
+
+(defn- artifact-problems [artifact]
+  (let [f (ns-resolve 'kotoba.core.capability-repository 'validate-provider-artifact)]
+    (f {:capability/provider-status :reference-implemented
+        :capability/id "http/fetch"}
+       artifact)))
+
+(deftest an-unsigned-provider-still-needs-the-allowlist
+  ;; Unchanged: `:reference-unsigned` is a concession for things that cannot
+  ;; reach anything, and http/fetch is not one of them.
+  (let [ps (artifact-problems (assoc attested-artifact :signature :reference-unsigned))]
+    (is (some #(= :reference-implemented-not-allowlisted (:problem %)) ps))))
+
+(deftest an-attested-provider-does-not-need-the-allowlist
+  ;; The point of this change. A publisher who can be revoked is the property
+  ;; the allowlist was standing in for.
+  (let [ps (artifact-problems attested-artifact)]
+    (is (empty? ps) (pr-str ps))))
+
+(deftest an-attestation-must-bind-THIS-artifact
+  ;; The attack: a real signature over a different artifact, presented as a
+  ;; signature over this one. Decidable with no crypto, which is why this
+  ;; namespace decides it.
+  (let [ps (artifact-problems
+            (assoc-in attested-artifact [:signature :statement :artifact-sha256]
+                      (apply str (repeat 64 "c"))))]
+    (is (some #(= :attestation-does-not-bind-this-artifact (:problem %)) ps))
+    (is (not (some #(= :reference-implemented-not-allowlisted (:problem %)) ps))
+        "a mis-bound attestation must not be reported as an allowlist problem")))
+
+(deftest a-malformed-envelope-is-refused-by-shape
+  (doseq [[label bad]
+          [["not a map" 42]
+           ["wrong format" (assoc-in attested-artifact [:signature :format] :other/v1)]
+           ["no signature" (update-in attested-artifact [:signature] dissoc :signature)]
+           ["missing a statement field"
+            (update-in attested-artifact [:signature :statement] dissoc :expires)]]]
+    (let [artifact (if (map? bad) bad (assoc attested-artifact :signature bad))
+          ps (artifact-problems artifact)]
+      (is (some #(= :attestation-envelope-malformed (:problem %)) ps) label))))
+
+(deftest an-attestation-window-must-be-a-window
+  (let [ps (artifact-problems
+            (assoc-in attested-artifact [:signature :statement :expires] 500))]
+    (is (some #(= :attestation-window-invalid (:problem %)) ps))))
+
+(deftest the-allowlist-still-means-what-its-docstring-says
+  ;; A floor on the set: this suite keeps passing if an effectful capability is
+  ;; simply added to the allowlist, which would be the wrong fix.
+  (let [allow @(ns-resolve 'kotoba.core.capability-repository
+                           'reference-implemented-allowlist)]
+    (is (= #{"math/sin" "math/cos" "hash/sha256" "data/cbor" "data/json"
+             "clock/monotonic" "random/bytes" "time/now-days"} allow))
+    (is (not (contains? allow "http/fetch")))))
