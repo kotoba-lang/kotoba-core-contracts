@@ -9,10 +9,18 @@
         ;; first reaches the codec, so the old spelling propagated outward from
         ;; it; and tools.deps dedupes by the coordinate SYMBOL, so a consumer
         ;; that also names the new one ends up with two cbor.core at two shas.
-        ;; The :git/url is dropped rather than corrected: io.github.<org>/<name>
-        ;; derives it, and a separate URL is the thing that hid the rename.
+        ;;
+        ;; The :git/url is corrected and KEPT. Dropping it so that
+        ;; io.github.<org>/<name> derives the URL would make the coordinate and
+        ;; the repository incapable of disagreeing again, which is the tempting
+        ;; fix -- but measured, it also deletes this dependency from what
+        ;; scripts/verify-repository-roles.cljs sees: its production-deps keeps
+        ;; only entries carrying a :git/url. resources/repository-rules.edn's
+        ;; :depends-on, which that check asserts equal to production deps, is
+        ;; updated in this commit for the same reason.
         io.github.kotoba-lang/org-ietf-cbor
-        {:git/sha "58144e81ccdf7a82367085c66ea21ca84a1a7ddb"}
+        {:git/url "https://github.com/kotoba-lang/org-ietf-cbor.git"
+         :git/sha "58144e81ccdf7a82367085c66ea21ca84a1a7ddb"}
         io.github.kotoba-lang/io-multiformats
         {:git/url "https://github.com/kotoba-lang/io-multiformats.git"
          :git/sha "eec3ee85c458ea830be94518b9a42f4a8f1aee40"}
