@@ -2,7 +2,7 @@
   (:require [clojure.set :as set]
             [clojure.string :as str]
             [multiformats.core :as mf]
-            #?(:clj [ed25519.core :as ed25519]))
+            [ed25519.core :as ed25519])
   #?(:clj (:import (java.util Base64))))
 
 (def manifest-required
@@ -146,6 +146,14 @@
   #?(:clj (.getBytes s "UTF-8")
      :cljs (.encode (js/TextEncoder.) s)))
 
+(defn- base64->bytes
+  "Decode a base64 signature into the byte shape `ed25519.core/verify` takes on
+  this host. Throws on input the host's decoder rejects; callers treat that the
+  same as a signature that did not verify."
+  [^String sig]
+  #?(:clj (.decode (Base64/getDecoder) ^String sig)
+     :cljs (js/Buffer.from sig "base64")))
+
 (defn- ed25519-signature-error
   "Real Ed25519 verification of SIG (a base64-encoded signature, the same
   encoding `cacao.core`/`kotoba-lang/org-chainagnostic-cacao` uses) against
@@ -155,26 +163,32 @@
   malformed did:key, or a genuine signature mismatch are all reported as
   the same closed rejection, not an uncaught exception.
 
-  :clj only. `ed25519.core` (kotoba-lang/ed25519) is a JVM
-  (java.security-based) Ed25519 implementation; no portable/:cljs Ed25519
-  verifier exists yet anywhere in this dependency graph, unlike
-  `multiformats.core` (fully .cljc). Rather than silently treat an
-  unverifiable signature as valid under :cljs, this fails CLOSED there --
-  every signature is rejected until a portable verifier exists. That is a
-  real, deliberate behavior change for any future :cljs consumer of this
-  namespace (there is none today -- see the file/ns docs), not an
-  oversight: accepting what cannot actually be verified would reintroduce
-  the exact vulnerability this function exists to close."
+  PORTABLE as of 2026-09-06. It was `:clj`-only, and its own docstring gave
+  the reason: \"no portable/:cljs Ed25519 verifier exists yet anywhere in this
+  dependency graph\". That was true when written and is not true now --
+  `kotoba-lang/org-ietf-ed25519` carries a `:cljs` branch over `node:crypto`,
+  and this repository already depends on it. Measured before changing
+  anything: `(ed25519.core/verify-did did msg sig)` returns `true` under nbb
+  for a signature this same runtime produced.
+
+  The `:cljs` branch used to fail CLOSED -- every signature rejected -- which
+  was the right call while nothing could verify one, and is the wrong call
+  once something can. It rejected VALID signatures, so the failure was not
+  visible as a security hole; it was visible as \"package locks cannot be
+  consumed off the JVM at all\", which is what kept `amu` from consuming one.
+  Reproduce the old behaviour by deleting the `ed25519.core` require: every
+  accepting vector in `kotoba.lang.package-signature-test` (JVM) and in
+  `test/run_portable.cljs` (Node) flips to rejected, and the forged ones
+  start being rejected for the WRONG reason -- which is what makes the
+  reason literal those suites pin worth pinning."
   [sig did signed]
-  #?(:clj
-     (try
-       (let [sig-bytes (.decode (Base64/getDecoder) ^String sig)]
-         (when-not (ed25519/verify-did did signed sig-bytes)
-           (invalid "signature verification failed" {:did did})))
-       (catch Exception e
-         (invalid "signature verification failed" {:did did :error (.getMessage e)})))
-     :cljs
-     (invalid "signature verification not supported in this runtime" {:did did})))
+  (try
+    (when-not (ed25519/verify-did did signed (base64->bytes sig))
+      (invalid "signature verification failed" {:did did}))
+    (catch #?(:clj Exception :cljs :default) e
+      (invalid "signature verification failed"
+               {:did did :error #?(:clj (.getMessage ^Exception e)
+                                   :cljs (.-message e))}))))
 
 (defn signatures-error
   "Validates SIGS (a package manifest's :kotoba.package/signatures vector)
