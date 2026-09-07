@@ -216,6 +216,18 @@
                   ;; invocations, only choose among the fixed grants. No
                   ;; shell is ever spawned -- argv goes straight to exec.
                   "proc/exec" 259
+                  ;; kotoba-lang/find — org-wide directory tree walking for the
+                  ;; find/grep lib (com-junkawasaki/root, find-lib slice). The
+                  ;; existing "fs/browse" (253) answers entry NAMES only, with
+                  ;; no way for a guest to ask "is this entry a directory" —
+                  ;; which is exactly what a recursive tree walk needs and
+                  ;; what fs/browse deliberately does not provide (the guest
+                  ;; recurses through fs-browse + fs-read, but cannot decide
+                  ;; whether to descend). fs-browse-dir answers ONE directory
+                  ;; as a list of (name, is-dir) pairs so the guest can walk
+                  ;; the tree itself, every descent still inside the
+                  ;; capability guard. Same module "kotoba" as fs/browse.
+                  "fs/browse-dir" 261
                   }
  :special-forms #{do let if quote def defn ns}
  :host-import-order [has-capability?
@@ -344,6 +356,8 @@
   env-read
   proc-exec
   edn-read
+  ;; --- kotoba-lang/find tree-walk (find-lib slice). Appended, never inserted.
+  fs-browse-dir
   ]
  :host-imports {has-capability? {:module "kotoba"
                                  :field "has_capability"
@@ -1107,6 +1121,20 @@
                            ;; (dir-ptr dir-len out-ptr out-len)
                            :params [:i32 :i32 :i32 :i32]
                            :result :i32}
+                fs-browse-dir {:module "kotoba"
+                               :field "fs_browse_dir"
+                               :capability "fs/browse-dir"
+                               ;; (dir-ptr dir-len out-ptr out-len) -> the list
+                               ;; of (name, is-dir) entries of ONE directory,
+                               ;; flowed through the string-result convention
+                               ;; as a "\n"-joined listing where each line is
+                               ;; "<name>\t<0|1>" (0 = file, 1 = directory).
+                               ;; The guest splits lines and fragments to walk
+                               ;; the tree itself; every descent still inside
+                               ;; the capability guard. A granted-but-missing
+                               ;; directory returns nil (absent, like fs-browse).
+                               :params [:i32 :i32 :i32 :i32]
+                               :result :i32}
                 env-read {:module "kotoba"
                           :field "env_read"
                           :capability "env/read"
