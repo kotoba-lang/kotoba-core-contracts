@@ -87,6 +87,10 @@
    "process/list" "rad:z2r9wvkLnzQdNqcKXA6e2vqpAMzXA"
    "system/metrics" "rad:z2NHGfJUuENSHs1Pa6RUJG7VgqKKc"
    "fs/browse" "rad:z3x5XVqB3dxsQ6bHwxNsgByjPmvkh"
+  ;; kotoba-lang/find tree-walk (find-lib slice): same directory-listing
+  ;; family as fs/browse, distinct rid because it is a distinct capability
+  ;; id (261) with its own grant boundary.
+  "fs/browse-dir" "rad:z4C9QYhT2mKvRwX8sNpLdJfG6bUe"
    "image/metadata" "rad:z2yi4fmconRcJqtH4qx1yjMyv2RcK"
    "media/library" "rad:zNvpwyDHFodyZprmXMhmDr3fERRn"
    "audio/playback" "rad:z38DYGKRM9wnd75WecgqwW8YzPNn3"
@@ -158,6 +162,7 @@
    ;; Distinct from fs/app-data, which is an app's own private store. This is
    ;; the user's filesystem: what is in a directory they chose.
    "fs/browse" #{:storage-read :personal-data}
+  "fs/browse-dir" #{:storage-read :personal-data}
    "image/metadata" #{:storage-read :personal-data}
    "media/library" #{:storage-read :personal-data}
    ;; Distinct from audio/io, which includes :sensor-read -- the microphone.

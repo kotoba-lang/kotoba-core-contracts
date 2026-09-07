@@ -1,0 +1,17 @@
+feat: add fs/browse-dir capability (id 261) for recursive tree-walk in find lib
+
+Adds a new capability id 261 "fs/browse-dir" alongside the existing
+"fs/browse" (253). fs/browse answers entry NAMES only with no way for a
+guest to ask "is this entry a directory" - which is exactly what a
+recursive org-wide tree walk (the kotoba-lang/find lib) needs.
+
+fs-browse-dir answers ONE directory as a list of (name, is-dir) pairs,
+flown through the string-result convention as a newline-joined listing
+where each line is "<name>\t<0|1>" (0=file, 1=dir). The guest walks the
+tree itself, every descent still inside the capability guard.
+
+Append-only discipline: host-import-order appended (never inserted) per
+the contract's own rule; capability-ids, host-imports, and the golden
+host-import-order test vector updated together. Pending: effect
+classification + radicle rid (env/read/proc-exec classification is a
+pre-existing standing gap, untouched here).

@@ -266,8 +266,10 @@
      ;; social/publish (kotoba-lang/haishin), appended for the same reason.
          social-publish social-publish-receipt
          ;; kbb ops-script surface (ADR-2607181900), appended -- never inserted.
-         env-read proc-exec edn-read]
-               (contracts/host-import-order contract)))))
+                 env-read proc-exec edn-read
+                 ;; kotoba-lang/find tree-walk (find-lib slice), appended -- never inserted.
+                 fs-browse-dir]
+                       (contracts/host-import-order contract)))))
 
 (deftest kami-engine-imports-registered
   ;; kami-* game-engine ECS surface (one shared "kami/engine" capability,
@@ -389,6 +391,23 @@
     (is (= "kotoba" (get-in contract [:host-imports 'edn-read :module])))
     (is (= :value (get-in contract [:host-imports 'edn-read :result])))
     (is (some #{'edn-read} (contracts/host-import-order contract)))))
+
+(deftest fs-browse-dir-host-import-registered
+  ;; kotoba-lang/find tree-walk (find-lib slice): fs/browse (253) answers
+  ;; entry NAMES only, with no way for a guest to ask whether an entry is a
+  ;; directory — which is exactly what a recursive tree walk needs. This
+  ;; separate op answers ONE directory as a list of (name, is-dir) pairs so
+  ;; the guest can walk the tree itself, every descent still inside the
+  ;; capability guard.
+  (let [contract (contracts/capability-contract)]
+    (is (= [] (contracts/validate-capability-contract contract)))
+    (is (= 261 (contracts/capability-id contract "fs/browse-dir")))
+    (is (= "fs/browse-dir" (get-in contract [:host-imports 'fs-browse-dir :capability])))
+    (is (= "fs_browse_dir" (get-in contract [:host-imports 'fs-browse-dir :field])))
+    (is (= "kotoba" (get-in contract [:host-imports 'fs-browse-dir :module])))
+    (is (= [:i32 :i32 :i32 :i32] (get-in contract [:host-imports 'fs-browse-dir :params])))
+    (is (= :i32 (get-in contract [:host-imports 'fs-browse-dir :result])))
+    (is (some #{'fs-browse-dir} (contracts/host-import-order contract)))))
 
 (deftest http-post-headers-host-import-registered
   ;; kototama.tender's actor:host ABI, THIRD wave (com-junkawasaki/root, this
