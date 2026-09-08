@@ -4,8 +4,8 @@
   Tamaki may plan and emit an envelope; Kototama, Fleet, or another tender
   independently validates it. This namespace is the vocabulary authority.
   It does not create HostCaps or perform an effect."
-  (:require [clojure.set :as set]
-            [clojure.string :as str]))
+  (:require [kotoba.lang.coll :as coll]
+            [kotoba.lang.text :as str]))
 
 (def contract
   {:schema "kotoba.actor.capability-contract.v1"
@@ -57,10 +57,10 @@
 (def known-imports (set (keys import-effects)))
 
 (defn required-imports [capabilities]
-  (reduce set/union #{} (map capability-imports capabilities)))
+  (reduce coll/set-union #{} (map capability-imports capabilities)))
 
 (defn effects-for [imports]
-  (reduce set/union #{} (map import-effects imports)))
+  (reduce coll/set-union #{} (map import-effects imports)))
 
 (defn- error [kind data]
   (assoc data :error kind))
@@ -76,22 +76,22 @@
         grants (set (:grants declaration))
         limits (:limits declaration)
         policies (:effect-policy declaration)
-        unknown-imports (set/difference imports known-imports)
-        unknown-grants (set/difference grants known-imports)
-        unknown-capabilities (set/difference realizes
+        unknown-imports (coll/set-difference imports known-imports)
+        unknown-grants (coll/set-difference grants known-imports)
+        unknown-capabilities (coll/set-difference realizes
                                             (set (keys capability-imports)))
-        undeclared-capabilities (set/difference realizes
+        undeclared-capabilities (coll/set-difference realizes
                                                 (set actor-capabilities))
         required (required-imports realizes)
-        missing-imports (set/difference required imports)
-        missing-grants (set/difference imports grants)
+        missing-imports (coll/set-difference required imports)
+        missing-grants (coll/set-difference imports grants)
         effects (effects-for imports)
-        missing-policies (set/difference effects (set (keys policies)))
+        missing-policies (coll/set-difference effects (set (keys policies)))
         invalid-policies (into {}
                                (remove (fn [[_ decision]]
                                          (contains? decisions decision)))
                                policies)
-        network? (seq (set/intersection effects
+        network? (seq (coll/set-intersection effects
                                         #{:network-read :network-write}))
         prefixes (:allowed-url-prefixes limits)
         secret? (contains? effects :secret)
@@ -172,7 +172,7 @@
                (not (pos-int? (:max-http-fetches limits))))
           (conj (error :limits/http-fetches {}))
 
-          (and (seq (set/intersection imports
+          (and (seq (coll/set-intersection imports
                                       #{:http-post :http-post-headers}))
                (not (pos-int? (:max-http-posts limits))))
           (conj (error :limits/http-posts {}))
@@ -223,12 +223,12 @@
         limits (:tamaki.capability/limits envelope)
         policies (:tamaki.capability/effect-policy envelope)
         abi (:tamaki.capability/abi envelope)
-        unknown-imports (set/difference imports known-imports)
-        unknown-grants (set/difference grants known-imports)
-        missing-grants (set/difference imports grants)
-        excess-grants (set/difference grants imports)
+        unknown-imports (coll/set-difference imports known-imports)
+        unknown-grants (coll/set-difference grants known-imports)
+        missing-grants (coll/set-difference imports grants)
+        excess-grants (coll/set-difference grants imports)
         effects (effects-for imports)
-        missing-policies (set/difference effects (set (keys policies)))
+        missing-policies (coll/set-difference effects (set (keys policies)))
         invalid-policies (into {}
                                (remove (fn [[_ decision]]
                                          (contains? decisions decision)))
@@ -261,7 +261,7 @@
           (conj (error :effect-policy/missing {:effects missing-policies}))
           (seq invalid-policies)
           (conj (error :effect-policy/invalid {:policies invalid-policies}))
-          (and (seq (set/intersection effects #{:network-read :network-write}))
+          (and (seq (coll/set-intersection effects #{:network-read :network-write}))
                (or (nil? prefixes) (empty? prefixes)))
           (conj (error :network/allowlist-required {}))
           (and (contains? effects :network-write)
@@ -279,7 +279,7 @@
           (and (contains? imports :http-fetch)
                (not (pos-int? (:max-http-fetches limits))))
           (conj (error :limits/http-fetches {}))
-          (and (seq (set/intersection imports
+          (and (seq (coll/set-intersection imports
                                       #{:http-post :http-post-headers}))
                (not (pos-int? (:max-http-posts limits))))
           (conj (error :limits/http-posts {}))

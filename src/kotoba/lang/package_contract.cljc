@@ -1,7 +1,7 @@
 (ns kotoba.lang.package-contract
   (:require [cbor.core :as cbor]
-            [clojure.set :as set]
-            [clojure.string :as str]
+            [kotoba.lang.coll :as coll]
+            [kotoba.lang.text :as str]
             [multiformats.core :as mf]
             [ed25519.core :as ed25519])
   #?(:clj (:import (java.util Base64))))
@@ -431,7 +431,7 @@
   ([m tc] (lockfile-error m tc nil))
   ([m tc {:keys [tree-bytes-by-dep component-bytes-by-dep]}]
    (let [declared (set (:declared-capabilities tc))
-         blocked (set/union (set (:revoked-signers tc))
+         blocked (coll/set-union (set (:revoked-signers tc))
                             (set (:expired-signers tc))
                             (set (:compromised-signers tc)))]
      (or
@@ -457,11 +457,11 @@
                    dep (get component-bytes-by-dep (:dep/name dep)))
                   (when-not (seq (:dep/signers dep))
                     (invalid "signer required" {:dep dep}))
-                  (when-let [bad (seq (set/intersection (set (:dep/signers dep)) blocked))]
+                  (when-let [bad (seq (coll/set-intersection (set (:dep/signers dep)) blocked))]
                     (invalid "signer not currently trusted"
                              {:signers (vec bad)
                               :dependency (:dep/name dep)}))
-                  (when-not (set/subset? (set (:dep/capabilities dep)) declared)
+                  (when-not (coll/subset? (set (:dep/capabilities dep)) declared)
                     (invalid "capability grant exceeds package declaration"
                              {:grant (:dep/capabilities dep)
                               :declared (:declared-capabilities tc)}))))
