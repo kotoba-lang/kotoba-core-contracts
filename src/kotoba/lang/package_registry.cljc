@@ -9,7 +9,7 @@
 
   This namespace is I/O-free: callers supply an already-parsed registry EDN
   map. Network/HTTP registry backends can project into the same shape."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [kotoba.lang.package-contract :as package-contract]))
 
 (def registry-version 1)

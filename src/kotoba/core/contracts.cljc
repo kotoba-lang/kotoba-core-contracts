@@ -1,6 +1,6 @@
 (ns kotoba.core.contracts
   "CLJC accessors and validation for Kotoba core EDN contracts."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             #?(:clj [clojure.edn :as edn])
             #?(:clj [clojure.java.io :as io])))
 
@@ -30,7 +30,7 @@
            idx (.lastIndexOf name ".")]
        (when (and (not= idx -1)
                   (< idx (dec (count name))))
-         (str/lower-case (subs name idx))))
+         (str/lower (subs name idx))))
      :cljs nil))
 
 (defn source-kind

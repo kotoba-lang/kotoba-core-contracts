@@ -1,8 +1,8 @@
 (ns kotoba.core.capability-repository
   "Contract and catalog for one-authority-capability-per-repository packages."
   (:require [cbor.core :as cbor]
-            [clojure.set :as set]
-            [clojure.string :as str]
+            [kotoba.lang.coll :as coll]
+            [kotoba.lang.text :as str]
             [kotoba.core.actor-capability :as actor-capability]
             [multiformats.core :as mf]))
 
@@ -217,7 +217,7 @@
 
 (defn default-policy
   ([effects]
-   (if (seq (set/intersection effects #{:network-write :secret}))
+   (if (seq (coll/set-intersection effects #{:network-write :secret}))
      :approval-required
      :autonomous))
   ([capability-id _effects]
@@ -358,7 +358,7 @@
   [imports]
   (let [requested (set imports)]
     (->> (actor-host-catalog)
-         (filter #(seq (set/intersection requested
+         (filter #(seq (coll/set-intersection requested
                                         (:capability/imports %))))
          (mapv #(select-keys %
                             [:capability/id
@@ -389,8 +389,8 @@
         [{:problem :capability-repositories-vector-required}])
       (when-not (= expected actual)
         [{:problem :capability-repository-set-mismatch
-          :missing (set/difference expected actual)
-          :excess (set/difference actual expected)}])))))
+          :missing (coll/set-difference expected actual)
+          :excess (coll/set-difference actual expected)}])))))
 
 (def allowed-provider-statuses
   "contract-only: discovery + definition CID only.
@@ -599,8 +599,8 @@
         [{:problem :duplicate-capability-repository}])
       (when-not (= (set imports) actor-capability/known-imports)
         [{:problem :actor-host-import-coverage
-          :missing (set/difference actor-capability/known-imports (set imports))
-          :excess (set/difference (set imports)
+          :missing (coll/set-difference actor-capability/known-imports (set imports))
+          :excess (coll/set-difference (set imports)
                                   actor-capability/known-imports)}])))))
 
 (defn validate-full-catalog [runtime-contract catalog]
@@ -618,13 +618,13 @@
       (mapcat #(validate-manifest runtime-contract %) catalog)
       (when-not (= expected-ids (set ids))
         [{:problem :capability-id-coverage
-          :missing (set/difference expected-ids (set ids))
-          :excess (set/difference (set ids) expected-ids)}])
+          :missing (coll/set-difference expected-ids (set ids))
+          :excess (coll/set-difference (set ids) expected-ids)}])
       (when-not (= (count ids) (count (distinct ids)))
         [{:problem :duplicate-capability-id}])
       (when-not (= (count repos) (count (distinct repos)))
         [{:problem :duplicate-capability-repository}])
       (when-not (= expected-imports imports)
         [{:problem :runtime-import-coverage
-          :missing (set/difference expected-imports imports)
-          :excess (set/difference imports expected-imports)}])))))
+          :missing (coll/set-difference expected-imports imports)
+          :excess (coll/set-difference imports expected-imports)}])))))
