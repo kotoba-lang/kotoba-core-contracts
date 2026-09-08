@@ -28,7 +28,7 @@
   (:require ["node:fs" :as fs]
             ["node:path" :as path]
             [clojure.edn :as edn]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [kotoba.lang.package-contract :as contract]))
 
 (def ^:private root

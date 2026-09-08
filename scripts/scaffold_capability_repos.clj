@@ -5,7 +5,7 @@
     clojure -M -m scaffold-capability-repos /absolute/output/root
     clojure -M -m scaffold-capability-repos /absolute/output/root --update"
   (:require [clojure.java.io :as io]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [kotoba.core.capability-repository :as repository]
             [kotoba.core.contracts :as contracts]))
 
