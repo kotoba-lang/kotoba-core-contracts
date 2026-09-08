@@ -1,5 +1,5 @@
 (ns kotoba.core.contracts-test
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is run-tests testing]]
             [kotoba.core.actor-capability :as actor-capability]
             [kotoba.core.capability-repository :as capability-repository]
