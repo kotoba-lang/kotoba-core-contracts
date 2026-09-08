@@ -1,7 +1,7 @@
 (ns kotoba.lang.package-contract-test
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]
             [kotoba.lang.package-contract :as contract]
             [multiformats.core :as mf]))
