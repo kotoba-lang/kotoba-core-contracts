@@ -21,7 +21,7 @@
   client; kotobase-client/ipns.cljs and net-kotobase-ipfs/gateway.cljs:
   both `js/fetch`-based, browser/Cloudflare-Worker only) -- this is a
   fresh, minimal implementation, not a rewiring of existing code."
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [multiformats.core :as mf]
             [kotoba.lang.package-registry :as registry])
   (:import (java.net URI)

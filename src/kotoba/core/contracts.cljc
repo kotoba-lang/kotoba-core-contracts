@@ -1,7 +1,7 @@
 (ns kotoba.core.contracts
   "CLJC accessors and validation for Kotoba core EDN contracts."
   (:require [kotoba.lang.text :as str]
-            #?(:clj [clojure.edn :as edn])
+            #?(:clj [kotoba.lang.edn :as edn])
             #?(:clj [clojure.java.io :as io])))
 
 (def source-contract-resource "kotoba/lang/source_contract.edn")
