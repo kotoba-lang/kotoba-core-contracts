@@ -24,7 +24,7 @@ or host import ABI shape.
 ## Test
 
 ```sh
-clojure -M:test
+kbb -M:test
 ```
 
 ## Atomic capability repositories
@@ -41,7 +41,7 @@ semantics creates a new CID. The hash rules are themselves pinned by
 `:capability/hash-contract-cid`.
 
 ```sh
-clojure -M -m scaffold-capability-repos /absolute/output/root
+kbb -M -m scaffold-capability-repos /absolute/output/root
 ```
 
 The generator refuses to overwrite an existing directory. Generated packages
