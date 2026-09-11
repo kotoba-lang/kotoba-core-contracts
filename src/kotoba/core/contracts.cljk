@@ -1,5 +1,6 @@
 (ns kotoba.core.contracts
   "CLJC accessors and validation for Kotoba core EDN contracts."
+  {:kotoba/export [accepted-source? capability-contract-resource capability-id capability-name host-import-order host-imports policy-capabilities source-contract-resource source-extension source-kind source-plan validate-all validate-capability-contract validate-source-contract]}
   (:require [kotoba.lang.text :as str]
             #?(:clj [kotoba.lang.edn :as edn])
             #?(:clj [clojure.java.io :as io])))
