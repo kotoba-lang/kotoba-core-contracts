@@ -179,7 +179,7 @@
   consumed off the JVM at all\", which is what kept `amu` from consuming one.
   Reproduce the old behaviour by deleting the `ed25519.core` require: every
   accepting vector in `kotoba.lang.package-signature-test` (JVM) and in
-  `test/run_portable.cljs` (Node) flips to rejected, and the forged ones
+  `test/run_portable.cljk` (Node) flips to rejected, and the forged ones
   start being rejected for the WRONG reason -- which is what makes the
   reason literal those suites pin worth pinning."
   [sig did signed]

@@ -18,7 +18,7 @@
 ;; validator: every verdict below comes from `contract/validate-case` or
 ;; `contract/signatures-error`, the same entry points the JVM suite calls.
 ;;
-;;   nbb --classpath src:test:<deps> test/run_portable.cljs [root]
+;;   nbb --classpath src:test:<deps> test/run_portable.cljk [root]
 ;;
 ;; exit 0 = every case reached the verdict the corpus says it should
 ;; exit 1 = a case disagreed (the report names which, and how)
