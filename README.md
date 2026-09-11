@@ -7,14 +7,14 @@ This repo owns semantic contracts used by the launcher/runtime:
 
 - `resources/kotoba/lang/source_contract.edn`
 - `resources/kotoba/runtime/capability_contract.edn`
-- `src/kotoba/core/contracts.cljc`
-- `src/kotoba/core/actor_capability.cljc` — actor responsibility to bounded
+- `src/kotoba/core/contracts.cljk`
+- `src/kotoba/core/actor_capability.cljk` — actor responsibility to bounded
   `actor:host` authority, envelope emission, and host-neutral revalidation
-- `src/kotoba/core/capability_repository.cljc` — one capability per repository
+- `src/kotoba/core/capability_repository.cljk` — one capability per repository
   catalog and conformance rules
-- `src/kotoba/lang/package_contract.cljc`
-- `src/kotoba/lang/package_registry.cljc`
-- `src/kotoba/lang/package_registry_network.clj`
+- `src/kotoba/lang/package_contract.cljk`
+- `src/kotoba/lang/package_registry.cljk`
+- `src/kotoba/lang/package_registry_network.cljk`
 - `lang/package-conformance/`
 
 Launchers and native/Wasm adapters consume these contracts. They do not own
