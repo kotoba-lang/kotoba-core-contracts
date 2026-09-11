@@ -1,4 +1,4 @@
-#!/usr/bin/env nbb
+#!/usr/bin/env kbb
 ;; The Node half of this repository's test suite: the package conformance
 ;; corpus and the signature golden vectors, run through the real validator on
 ;; this runtime.
@@ -6,7 +6,7 @@
 ;; WHY A SECOND RUNTIME AT ALL. `kotoba.lang.package-contract` is `.cljc`, and
 ;; until 2026-09-06 its signature verification was `#?(:clj ...)`-only: under
 ;; `:cljs` it rejected EVERY signature, valid or forged, with "signature
-;; verification not supported in this runtime". `clojure -M:test` was green
+;; verification not supported in this runtime". `kbb -M:test` was green
 ;; throughout and could not have been otherwise -- a `:clj` test never loads
 ;; the `:cljs` branch. This entry is the measurement that was missing, and the
 ;; reason a package lock can now be validated without a JVM.
@@ -18,7 +18,7 @@
 ;; validator: every verdict below comes from `contract/validate-case` or
 ;; `contract/signatures-error`, the same entry points the JVM suite calls.
 ;;
-;;   nbb --classpath src:test:<deps> test/run_portable.cljk [root]
+;;   kbb --backend sci --classpath src:test:<deps> test/run_portable.cljk [root]
 ;;
 ;; exit 0 = every case reached the verdict the corpus says it should
 ;; exit 1 = a case disagreed (the report names which, and how)
@@ -33,7 +33,7 @@
 
 (def ^:private root
   ;; `(second *command-line-args*)` -- measured 2026-09-06: nbb does NOT put
-  ;; the script in this vector (`nbb x.cljs alpha beta` => ("alpha" "beta")),
+  ;; the script in this vector (`kbb --backend sci x.cljk alpha beta` => ("alpha" "beta")),
   ;; so `second` was the SECOND argument and the documented `[root]` was
   ;; silently ignored. It looked correct because every caller so far ran from
   ;; the repository root, where the "." default is the right answer -- an

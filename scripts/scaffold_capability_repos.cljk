@@ -2,8 +2,8 @@
   "Generate one importable repository skeleton per actor:host capability.
 
   Usage:
-    clojure -M -m scaffold-capability-repos /absolute/output/root
-    clojure -M -m scaffold-capability-repos /absolute/output/root --update"
+    kbb -M -m scaffold-capability-repos /absolute/output/root
+    kbb -M -m scaffold-capability-repos /absolute/output/root --update"
   (:require [clojure.java.io :as io]
             [kotoba.lang.text :as str]
             [kotoba.core.capability-repository :as repository]

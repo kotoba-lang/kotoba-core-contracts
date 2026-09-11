@@ -1,4 +1,4 @@
-#!/usr/bin/env nbb
+#!/usr/bin/env kbb
 ;; Regenerate lang/package-conformance/positive/self-consistent-manifest.edn:
 ;; a package manifest whose :manifest-cid actually equals its own content's
 ;; CID, and whose signature is over that CID.
@@ -20,7 +20,7 @@
 ;; content is what makes the order terminate at all -- see
 ;; `manifest-without-self-cid`.
 ;;
-;;   nbb --classpath src:<deps> scripts/gen-manifest-vectors.cljk \
+;;   kbb --backend sci --classpath src:<deps> scripts/gen-manifest-vectors.cljk \
 ;;     > lang/package-conformance/positive/self-consistent-manifest.edn
 
 (ns gen-manifest-vectors

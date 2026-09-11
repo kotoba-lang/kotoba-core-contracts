@@ -1,4 +1,4 @@
-#!/usr/bin/env nbb
+#!/usr/bin/env kbb
 ;; Regenerate lang/package-conformance/signature-vectors.edn.
 ;;
 ;; These are golden vectors, not fixtures a test regenerates for itself. Both
@@ -6,7 +6,7 @@
 ;; each one; a test that signed its own message would agree with itself on a
 ;; host whose signing and verification were both wrong.
 ;;
-;;   nbb --classpath <org-ietf-ed25519>/src scripts/gen-signature-vectors.cljk \
+;;   kbb --backend sci --classpath <org-ietf-ed25519>/src scripts/gen-signature-vectors.cljk \
 ;;     > lang/package-conformance/signature-vectors.edn
 ;;
 ;; Seeds are fixed constants: the point is a stable corpus, not entropy. No
