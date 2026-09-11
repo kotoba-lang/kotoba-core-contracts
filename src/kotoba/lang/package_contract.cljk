@@ -189,8 +189,18 @@
       (invalid "signature verification failed" {:did did}))
     (catch #?(:clj Exception :cljs :default) e
       (invalid "signature verification failed"
+               ;; 2026-09-12, adr-2609111900: the `:default` clause below exists so the
+               ;; Kotoba reader, whose only feature is `:kotoba`, reads this file. A
+               ;; `#?(:clj a :cljs b)` with no matching feature reads as NOTHING, which in a
+               ;; map-value position leaves the map with an odd number of forms, so the whole
+               ;; file was refused at read time ("map literal must contain an even number of
+               ;; forms") -- in a dependency, so every dependant stopped here. With `:default`
+               ;; the reader reads the file and refuses the `:cljs` form by NAME later, in the
+               ;; module that uses it. It changes nothing on clj/cljs: Clojure still picks
+               ;; `:clj`, ClojureScript/nbb still picks `:cljs` (first match).
                {:did did :error #?(:clj (.getMessage ^Exception e)
-                                   :cljs (.-message e))}))))
+                                   :cljs (.-message e)
+                                   :default (.-message e))}))))
 
 (defn signatures-error
   "Validates SIGS (a package manifest's :kotoba.package/signatures vector)
