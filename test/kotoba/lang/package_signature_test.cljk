@@ -8,7 +8,7 @@
   runtimes over one committed corpus is what makes the claim 'this verifies
   signatures' checkable rather than host-local."
   (:require [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [kotoba.test :refer [deftest is testing]]
             [kotoba.lang.package-contract :as contract]))
 
