@@ -2,7 +2,7 @@
   "Package registry resolve: name+version → CID-pinned lock entry."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [kotoba.lang.package-contract :as contract]
             [kotoba.lang.package-registry :as registry]))
 
