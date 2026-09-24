@@ -49,7 +49,18 @@
        (when (and (not= idx -1)
                   (< idx (dec (count name))))
          (str/lower (subs name idx))))
-     :cljs nil))
+     :cljs nil
+     ;; Kotoba (features #{:kotoba}): without this clause the body read as
+     ;; nothing -- "function body is empty" (adr-2609111900). The same
+     ;; algorithm through kotoba.lang.text; `lower` is absent from the Kotoba
+     ;; twin on purpose (host locale, lang/compat.edn), so the compiler refuses
+     ;; THAT call by name rather than this module answering nil.
+     :default
+     (let [name (str path)
+           idx (str/last-index-of name ".")]
+       (when (and (some? idx)
+                  (< idx (dec (count name))))
+         (str/lower (subs name idx))))))
 
 (defn source-kind
   "Classify a source path under the source contract."
@@ -232,7 +243,12 @@
 (defn validate-all
   ([] #?(:clj (validate-all (source-contract) (capability-contract))
          :org.babashka/nbb (validate-all (source-contract) (capability-contract))
-         :cljs []))
+         :cljs []
+         ;; Kotoba: the :clj call, not :cljs's empty answer -- the contract
+         ;; resources have no Kotoba loader yet, so the compiler refuses
+         ;; `source-contract` by name here instead of validating nothing
+         ;; (adr-2609111900: a #?-only body read as nothing under :kotoba).
+         :default (validate-all (source-contract) (capability-contract))))
   ([source capability]
    (vec (concat (validate-source-contract source)
                 (validate-capability-contract capability)))))
