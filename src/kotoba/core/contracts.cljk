@@ -2,13 +2,24 @@
   "CLJC accessors and validation for Kotoba core EDN contracts."
   {:kotoba/export [accepted-source? capability-contract-resource capability-id capability-name host-import-order host-imports policy-capabilities source-contract-resource source-extension source-kind source-plan validate-all validate-capability-contract validate-source-contract]}
   (:require [kotoba.lang.text :as str]
-            #?(:clj [kotoba.lang.edn :as edn])
-            #?(:clj [clojure.java.io :as io])))
+            #?(:clj [kotoba.lang.edn :as edn] :org.babashka/nbb [kotoba.lang.edn :as edn])
+            #?(:clj [clojure.java.io :as io] :org.babashka/nbb [clojure.java.io :as io])))
 
 (def source-contract-resource "kotoba/lang/source_contract.edn")
 (def capability-contract-resource "kotoba/runtime/capability_contract.edn")
 
+;; kbb (the org.babashka/nbb engine) reads the same classpath resource: its
+;; JVM-compatibility layer provides clojure.java.io/resource and slurp over the
+;; classpath (org-babashka-nbb 84f9b41). Without this branch every consumer
+;; test calling (capability-contract) failed on kbb with "Unable to resolve
+;; symbol: contracts/capability-contract" (measured 2026-09-24, ~50 capability-* repos).
 #?(:clj
+   (defn resource-edn [path]
+     (let [resource (io/resource path)]
+       (when-not resource
+         (throw (ex-info "missing Kotoba core contract resource" {:path path})))
+       (-> resource slurp edn/read-string)))
+   :org.babashka/nbb
    (defn resource-edn [path]
      (let [resource (io/resource path)]
        (when-not resource
@@ -17,9 +28,15 @@
 
 #?(:clj
    (defn source-contract []
+     (resource-edn source-contract-resource))
+   :org.babashka/nbb
+   (defn source-contract []
      (resource-edn source-contract-resource)))
 
 #?(:clj
+   (defn capability-contract []
+     (resource-edn capability-contract-resource))
+   :org.babashka/nbb
    (defn capability-contract []
      (resource-edn capability-contract-resource)))
 
@@ -214,6 +231,7 @@
 
 (defn validate-all
   ([] #?(:clj (validate-all (source-contract) (capability-contract))
+         :org.babashka/nbb (validate-all (source-contract) (capability-contract))
          :cljs []))
   ([source capability]
    (vec (concat (validate-source-contract source)
