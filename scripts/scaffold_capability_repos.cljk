@@ -4,7 +4,7 @@
   Usage:
     kbb -M -m scaffold-capability-repos /absolute/output/root
     kbb -M -m scaffold-capability-repos /absolute/output/root --update"
-  (:require [clojure.java.io :as io]
+  (:require [kotoba.io :as io]
             [kotoba.lang.text :as str]
             [kotoba.core.capability-repository :as repository]
             [kotoba.core.contracts :as contracts]))
@@ -84,19 +84,19 @@
   ([root manifest sha update?]
   (let [dir (io/file root (repository/repository-name
                            (:capability/id manifest)))]
-    (when (and (.exists dir) (not update?))
+    (when (and (io/exists? dir) (not update?))
       (throw (ex-info "refusing to overwrite capability repository"
-                      {:path (.getCanonicalPath dir)})))
+                      {:path (io/canonical-path dir)})))
     (doseq [[path content] (repo-files manifest sha)]
       (let [file (io/file dir path)]
-        (.mkdirs (.getParentFile file))
+        (io/mkdirs (io/parent-file file))
         (spit file content)))
-    (.getCanonicalPath dir))))
+    (io/canonical-path dir))))
 
 (defn -main [& [root mode]]
   (when-not root
     (throw (ex-info "absolute output root required" {})))
-  (when-not (.isAbsolute (io/file root))
+  (when-not (io/absolute? (io/file root))
     (throw (ex-info "output root must be absolute" {:root root})))
   (when-not (contains? #{nil "--update"} mode)
     (throw (ex-info "unknown scaffold mode" {:mode mode})))
@@ -106,7 +106,7 @@
     (doseq [manifest (repository/full-catalog runtime-contract)]
       (let [dir (io/file root (repository/repository-name
                                (:capability/id manifest)))]
-        (if (and (.exists dir) (not update?))
-          (println "SKIP" (.getCanonicalPath dir))
+        (if (and (io/exists? dir) (not update?))
+          (println "SKIP" (io/canonical-path dir))
           (println (if update? "UPDATE" "CREATE")
                    (write-repo! root manifest sha update?)))))))

@@ -1,6 +1,6 @@
 (ns kotoba.lang.package-contract-test
-  (:require [kotoba.lang.edn :as edn]
-            [clojure.java.io :as io]
+  (:require [kotoba.bytes :as kbytes] [kotoba.lang.edn :as edn]
+            [kotoba.io :as io]
             [kotoba.lang.text :as str]
             [kotoba.test :refer [deftest is testing]]
             [kotoba.lang.package-contract :as contract]
@@ -54,8 +54,8 @@
   (testing "content integrity when component bytes are supplied"
     (let [lock (read-edn "lang/package-conformance/positive/component-lock.edn")
           tc {:declared-capabilities []}
-          good (.getBytes "component-bytes-v1" "UTF-8")
-          other (.getBytes "other-component" "UTF-8")]
+          good (kbytes/utf8-bytes "component-bytes-v1")
+          other (kbytes/utf8-bytes "other-component")]
       (is (nil? (contract/lockfile-error
                  lock tc {:component-bytes-by-dep {"kotoba-lang/guest-hello" good}})))
       (is (str/includes?
@@ -66,8 +66,8 @@
 (deftest cid?-genuinely-decodes-and-structurally-validates-a-cidv1
   (testing "a real CIDv1 (multiformats.core/cidv1-dag-cbor, the same function this repo's
             conformance fixtures now use) passes"
-    (is (contract/cid? (mf/cidv1-dag-cbor (.getBytes "hello" "UTF-8"))))
-    (is (contract/cid? (mf/cidv1-raw (.getBytes "hello" "UTF-8")))))
+    (is (contract/cid? (mf/cidv1-dag-cbor (kbytes/utf8-bytes "hello"))))
+    (is (contract/cid? (mf/cidv1-raw (kbytes/utf8-bytes "hello")))))
   (testing "the OLD naive (str/starts-with? x \"bafy\") check would have accepted every one of
             these -- they must all fail the real structural check instead"
     (is (false? (contract/cid? "bafyrepojson111111111111111111111111111111111111111111111111"))
@@ -81,7 +81,7 @@
     (is (false? (contract/cid? 42))))
   (testing "a CID with a corrupted/truncated digest (multihash declares a length the
             actual decoded bytes don't have) is rejected, not silently accepted"
-    (let [real (mf/cidv1-dag-cbor (.getBytes "hello" "UTF-8"))
+    (let [real (mf/cidv1-dag-cbor (kbytes/utf8-bytes "hello"))
           truncated (subs real 0 (dec (count real)))]
       (is (false? (contract/cid? truncated))))))
 
