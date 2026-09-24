@@ -43,10 +43,15 @@
         ;; updated in this commit for the same reason.
         io.github.kotoba-lang/org-ietf-cbor
         {:git/url "https://github.com/kotoba-lang/org-ietf-cbor.git"
-         :git/sha "58144e81ccdf7a82367085c66ea21ca84a1a7ddb"}
+         ;; 2026-09-25: a09268f8 (was 58144e81, which it contains): the
+         ;; typed encoder definition-block-fragment is built on
+         ;; (adr-2609242330 S1c).
+         :git/sha "a09268f8227a8c9b1ce145fa57b244af2ebe7d5e"}
         io.github.kotoba-lang/io-multiformats
         {:git/url "https://github.com/kotoba-lang/io-multiformats.git"
-         :git/sha "eec3ee85c458ea830be94518b9a42f4a8f1aee40"}
+         ;; 2026-09-25: 721281d2 (was eec3ee85, which it contains): moves with
+         ;; cbor; the suite ran against it.
+         :git/sha "721281d20525dc4d9af0064862d1c35226065ce2"}
         io.github.kotoba-lang/org-ietf-ed25519
         {:git/url "https://github.com/kotoba-lang/org-ietf-ed25519.git"
          :git/sha "c1ba8322a33b668da1311ca69a8cdde3c7981b52"}}
