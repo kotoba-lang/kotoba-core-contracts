@@ -1,5 +1,6 @@
 (ns kotoba.core.contracts-test
-  (:require [kotoba.lang.text :as str]
+  (:require [cbor.core :as cbor]
+            [kotoba.lang.text :as str]
             [kotoba.test :refer [deftest is run-tests testing]]
             [kotoba.core.actor-capability :as actor-capability]
             [kotoba.core.capability-repository :as capability-repository]
@@ -698,3 +699,23 @@
     (is (= #{"math/sin" "math/cos" "hash/sha256" "data/cbor" "data/json"
              "clock/monotonic" "random/bytes" "time/now-days"} allow))
     (is (not (contains? allow "http/fetch")))))
+
+;; adr-2609242330 S1c: the definition block is encoded through cbor.core's
+;; typed encoder. Its bytes -- and so every definition CID -- must be the
+;; ones the dynamic encoder writes for the same block.
+(defn- ints [b] (mapv #(bit-and % 0xff) (seq b)))
+
+(deftest typed-definition-block-is-the-dynamic-encoding
+  (let [manifests (keep #(try (capability-repository/repository-manifest %) (catch :default _ nil))
+                        (sort (keys capability-repository/radicle-rids)))
+        synthetic (for [imports [#{} #{:http-post} #{:sign :verify :gen-keypair} #{:log-write :log-read :clock-monotonic}]
+                        effects [#{} #{:data-egress} #{:network/post :identity/sign}]
+                        policy [:autonomous :approval-required]]
+                    {:capability/imports imports :capability/effects effects
+                     :capability/default-policy policy :capability/artifact {:format :wasm-component}})
+        all (concat manifests synthetic)
+        bad (remove #(= (ints (cbor/fragment-bytes (capability-repository/definition-block-fragment %)))
+                        (ints (cbor/encode (capability-repository/definition-block %))))
+                    all)]
+    (is (< 10 (count manifests)) "the catalog manifests were read (a run over none compares nothing)")
+    (is (empty? bad) (str "differing: " (count bad) " of " (count all)))))
