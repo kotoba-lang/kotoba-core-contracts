@@ -7,7 +7,7 @@
   (spin up a real local server per test, real client against it, no
   mocking of HttpClient itself) is the convention to follow for any
   future network-adapter test in this namespace family."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [clojure.edn :as edn]
             [multiformats.core :as mf]
             [kotoba.lang.package-registry-network :as net]

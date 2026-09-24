@@ -9,7 +9,7 @@
   signatures' checkable rather than host-local."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [kotoba.lang.package-contract :as contract]))
 
 (def vectors
