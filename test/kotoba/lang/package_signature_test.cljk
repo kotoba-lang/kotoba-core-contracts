@@ -7,7 +7,7 @@
   about that -- it could not, because it never loaded the other branch. Two
   runtimes over one committed corpus is what makes the claim 'this verifies
   signatures' checkable rather than host-local."
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [kotoba.test :refer [deftest is testing]]
             [kotoba.lang.package-contract :as contract]))

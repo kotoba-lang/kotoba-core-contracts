@@ -1,6 +1,6 @@
 (ns kotoba.lang.package-registry-test
   "Package registry resolve: name+version → CID-pinned lock entry."
-  (:require [clojure.edn :as edn]
+  (:require [kotoba.lang.edn :as edn]
             [clojure.java.io :as io]
             [kotoba.test :refer [deftest is testing]]
             [kotoba.lang.package-contract :as contract]

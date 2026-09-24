@@ -8,7 +8,7 @@
   mocking of HttpClient itself) is the convention to follow for any
   future network-adapter test in this namespace family."
   (:require [kotoba.test :refer [deftest is testing]]
-            [clojure.edn :as edn]
+            [kotoba.lang.edn :as edn]
             [multiformats.core :as mf]
             [kotoba.lang.package-registry-network :as net]
             [kotoba.lang.package-registry :as registry])
