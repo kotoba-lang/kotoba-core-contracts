@@ -1,11 +1,10 @@
 (ns kotoba.lang.package-contract
   {:kotoba/export [allowed-package-kinds cid? component-cid-error component-cid-of compute-manifest-cid contract-keyword? contract-surfaces-error contract-vector-error definition-cids-error invalid lock-required lockfile-error manifest-integrity-error manifest-required manifest-without-self-cid missing-key non-empty-string? package-manifest-error signatures-error tree-cid-error validate-case]}
-  (:require [cbor.core :as cbor]
+  (:require [kotoba.bytes :as kbytes] [cbor.core :as cbor]
             [kotoba.lang.coll :as coll]
             [kotoba.lang.text :as str]
             [multiformats.core :as mf]
-            [ed25519.core :as ed25519])
-  #?(:clj (:import (java.util Base64))))
+            [ed25519.core :as ed25519]))
 
 (def manifest-required
   [:kotoba.package/name
@@ -145,7 +144,7 @@
   Portable (same #?(:cljs (.encode (js/TextEncoder.) s)) construction
   `multiformats.core/kotoba-cid` already uses in this dependency)."
   [^String s]
-  #?(:clj (.getBytes s "UTF-8")
+  #?(:clj (kbytes/utf8-bytes s)
      :cljs (.encode (js/TextEncoder.) s)))
 
 (defn- base64->bytes
@@ -153,7 +152,7 @@
   this host. Throws on input the host's decoder rejects; callers treat that the
   same as a signature that did not verify."
   [^String sig]
-  #?(:clj (.decode (Base64/getDecoder) ^String sig)
+  #?(:clj (kbytes/base64-decode-bytes ^String sig)
      :cljs (js/Buffer.from sig "base64")))
 
 (defn- ed25519-signature-error
