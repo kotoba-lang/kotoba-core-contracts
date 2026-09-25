@@ -1,7 +1,7 @@
 (ns kotoba.core.capability-repository
   "Contract and catalog for one-authority-capability-per-repository packages."
   {:kotoba/export [actor-host-capability-ids actor-host-catalog allowed-provider-statuses approval-required-capabilities authority capability-effects default-policy definition-block definition-block-fragment definition-cid definition-hash-contract definition-hash-contract-cid definition-schema effects-by-capability full-catalog full-repository-manifest imports-by-capability namespace-symbol radicle-rids reference-implemented-allowlist repository-manifest repository-name repository-refs-for-imports resolve-definition-cid runtime-imports-by-capability schema validate-catalog validate-envelope-repositories validate-full-catalog validate-manifest]}
-  (:require [cbor.core :as cbor]
+  (:require [kotoba.bytes :as kbytes] [cbor.core :as cbor]
             [kotoba.lang.coll :as coll]
             [kotoba.lang.text :as str]
             [kotoba.core.actor-capability :as actor-capability]
@@ -227,7 +227,7 @@
      :autonomous)))
 
 (defn- utf8-bytes [value]
-  #?(:clj (.getBytes ^String value "UTF-8")
+  #?(:clj (kbytes/utf8-bytes ^String value)
      :cljs (.encode (js/TextEncoder.) value)))
 
 (defn- stable-name [value]
