@@ -1,19 +1,35 @@
 (ns kotoba.lang.package-contract
-  {:kotoba/export [allowed-package-kinds cid? component-cid-error component-cid-of compute-manifest-cid contract-keyword? contract-surfaces-error contract-vector-error definition-cids-error invalid lock-required lockfile-error manifest-integrity-error manifest-required manifest-without-self-cid missing-key non-empty-string? package-manifest-error signatures-error tree-cid-error validate-case]}
-  (:require [kotoba.bytes :as kbytes] [cbor.core :as cbor]
-            [kotoba.lang.coll :as coll]
-            [kotoba.lang.text :as str]
-            [multiformats.core :as mf]
-            [ed25519.core :as ed25519]))
+  {:kotoba/export #?(:kotoba [cid? non-empty-string?]
+                     :default [allowed-package-kinds cid? component-cid-error component-cid-of compute-manifest-cid contract-keyword? contract-surfaces-error contract-vector-error definition-cids-error invalid lock-required lockfile-error manifest-integrity-error manifest-required manifest-without-self-cid missing-key non-empty-string? package-manifest-error signatures-error tree-cid-error validate-case])}
+  (:require [kotoba.lang.text :as str]
+            #?@(:kotoba [] :default [[kotoba.bytes :as kbytes] [cbor.core :as cbor]
+                          [kotoba.lang.coll :as coll]
+                          [multiformats.core :as mf]
+                          [ed25519.core :as ed25519]])))
 
+;; ── the Kotoba reading of this file ─────────────────────────────────────────
+;; `#?(:kotoba A :default B)`: the Kotoba reader takes A, the JVM and
+;; ClojureScript readers take B, so every host body below is what it was.
+;; The Kotoba surface is `non-empty-string?` and `cid?`, the two predicates of
+;; scalars; everything else validates EDN manifests and lockfiles (maps whose
+;; shape is only known at run time), uses CBOR and Ed25519, and exists on the
+;; hosts only. `cid?` reads the CID's bytes itself rather than through
+;; `multiformats.core/cid->bytes`, which traps on a bad character where the
+;; host catches its throw and answers false; a varint longer than nine groups
+;; is false there (the host's shift wraps past 64 bits).
+
+#?(:kotoba nil
+   :default
 (def manifest-required
   [:kotoba.package/name
    :kotoba.package/version
    :kotoba.package/repo-rid
    :kotoba.package/source
    :kotoba.package/capabilities
-   :kotoba.package/signatures])
+   :kotoba.package/signatures]))
 
+#?(:kotoba nil
+   :default
 (def lock-required
   [:dep/name
    :dep/version
@@ -22,15 +38,26 @@
    :dep/tree-cid
    :dep/manifest-cid
    :dep/signers
-   :dep/capabilities])
+   :dep/capabilities]))
 
+#?(:kotoba nil
+   :default
 (def allowed-package-kinds
-  #{:library :adapter :schema-contract :tool :component})
+  #{:library :adapter :schema-contract :tool :component}))
 
+#?(:kotoba
+(defn non-empty-string?
+  [x :string] :bool
+  (not (str/blank? x))))
+
+#?(:kotoba nil
+   :default
 (defn non-empty-string?
   [x]
-  (and (string? x) (not (str/blank? x))))
+  (and (string? x) (not (str/blank? x)))))
 
+#?(:kotoba nil
+   :default
 (defn- read-varint
   "Unsigned LEB128 varint at OFFSET in BS (any indexable byte sequence --
   `nth`/`count` work uniformly on a JVM byte-array and a ClojureScript
@@ -41,8 +68,86 @@
     (let [b (bit-and (nth bs offset) 0xff)]
       (if (< b 0x80)
         [(bit-or value (bit-shift-left b shift)) (inc offset)]
-        (recur (inc offset) (bit-or value (bit-shift-left (bit-and b 0x7f) shift)) (+ shift 7))))))
+        (recur (inc offset) (bit-or value (bit-shift-left (bit-and b 0x7f) shift)) (+ shift 7)))))))
 
+#?(:kotoba
+(defn- b32-val [c :i64] :i64
+  (cond (and (>= c 97) (<= c 122)) (- c 97)
+        (and (>= c 50) (<= c 55)) (- c 24)
+        :else -1)))
+
+#?(:kotoba
+(defn- b32-valid? [text :string from :i64] :bool
+  (let [n (string-byte-length text)]
+    (loop [i from]
+      (cond (>= i n) true
+            (< (b32-val (string-code-point-at text i)) 0) false
+            :else (recur (+ i 1)))))))
+
+#?(:kotoba
+(defn- b32-decode [text :string from :i64] :vector-i64
+  (let [n (string-byte-length text)]
+    (loop [i from acc 0 bits 0 out (vector-i64)]
+      (if (>= i n)
+        out
+        (let [acc2 (bit-or (i64-shift-left acc 5) (b32-val (string-code-point-at text i)))
+              bits2 (+ bits 5)]
+          (if (>= bits2 8)
+            (let [bits3 (- bits2 8)]
+              (recur (+ i 1)
+                     (bit-and acc2 (- (i64-shift-left 1 bits3) 1))
+                     bits3
+                     (vector-conj out (bit-and 255 (i64-shift-right acc2 bits3)))))
+            (recur (+ i 1) acc2 bits2 out))))))))
+
+#?(:kotoba
+(defn- varint-at
+  "Unsigned LEB128 at OFFSET of BS as `[value next-offset]`; next is -1 if the
+  bytes run out (or the run is longer than nine groups)."
+  [bs :vector-i64 offset0 :i64] [:vector [:i64 :i64]]
+  (loop [offset offset0 value 0 shift 0]
+    (if (and (< offset (vector-count bs)) (< shift 64))
+      (let [b (bit-and (vector-at bs offset) 255)]
+        (if (< b 128)
+          (hetero-vector [:vector [:i64 :i64]] (bit-or value (i64-shift-left b shift)) (+ offset 1))
+          (recur (+ offset 1) (bit-or value (i64-shift-left (bit-and b 127) shift)) (+ shift 7))))
+      (hetero-vector [:vector [:i64 :i64]] 0 -1)))))
+
+#?(:kotoba
+(defn- cid-fields? [bs :vector-i64] :bool
+  (let [a (varint-at bs 0)
+        off1 (hetero-vector-at [:vector [:i64 :i64]] a 1)]
+    (and (>= off1 0)
+         (let [b (varint-at bs off1)
+               off2 (hetero-vector-at [:vector [:i64 :i64]] b 1)]
+           (and (>= off2 0)
+                (let [c (varint-at bs off2)
+                      off3 (hetero-vector-at [:vector [:i64 :i64]] c 1)]
+                  (and (>= off3 0)
+                       (let [d (varint-at bs off3)
+                             off4 (hetero-vector-at [:vector [:i64 :i64]] d 1)]
+                         (and (>= off4 0)
+                              (= 1 (hetero-vector-at [:vector [:i64 :i64]] a 0))
+                              (> (hetero-vector-at [:vector [:i64 :i64]] b 0) 0)
+                              (> (hetero-vector-at [:vector [:i64 :i64]] c 0) 0)
+                              (> (hetero-vector-at [:vector [:i64 :i64]] d 0) 0)
+                              (= (hetero-vector-at [:vector [:i64 :i64]] d 0)
+                                 (- (vector-count bs) off4))))))))))))
+
+#?(:kotoba
+(defn cid?
+  "A genuine CIDv1 structural check: base32 'b' multibase, then
+  [version-varint][codec-varint][multihash: fn-varint len-varint digest], the
+  version 1 and the declared multihash length the decoded digest's byte count."
+  [x :string] :bool
+  (and (non-empty-string? x)
+       (= 98 (string-code-point-at x 0))
+       (> (string-byte-length x) 1)
+       (b32-valid? x 1)
+       (cid-fields? (b32-decode x 1)))))
+
+#?(:kotoba nil
+   :default
 (defn cid?
   "A genuine CIDv1 structural check (`multiformats.core/cid->bytes` decode,
   then parse [version-varint][codec-varint][multihash: fn-varint
@@ -70,23 +175,31 @@
                 (pos? hash-fn)
                 (pos? hash-len)
                 (= hash-len digest-len)))
-         (catch #?(:clj Exception :cljs :default) _ false))))
+         (catch #?(:clj Exception :cljs :default) _ false)))))
 
+#?(:kotoba nil
+   :default
 (defn invalid
   [message data]
-  {:valid? false :message message :data data})
+  {:valid? false :message message :data data}))
 
+#?(:kotoba nil
+   :default
 (defn contract-keyword?
   [x]
   (and (keyword? x)
        (let [s (subs (str x) 1)]
          (or (str/starts-with? s "app.kotoba.")
-             (str/starts-with? s "wire.kotoba.")))))
+             (str/starts-with? s "wire.kotoba."))))))
 
+#?(:kotoba nil
+   :default
 (defn missing-key
   [m keys message]
-  (some (fn [k] (when-not (contains? m k) (invalid message {:missing k}))) keys))
+  (some (fn [k] (when-not (contains? m k) (invalid message {:missing k}))) keys)))
 
+#?(:kotoba nil
+   :default
 (defn contract-vector-error
   [value field]
   (cond
@@ -98,8 +211,10 @@
             (when-not (contract-keyword? contract)
               (invalid "contract surface keyword required"
                        {:field field :value contract})))
-          value)))
+          value))))
 
+#?(:kotoba nil
+   :default
 (defn definition-cids-error
   "A dep may pin the exact definitions it resolved against, not just the tree
   and manifest it came from. :dep/tree-cid says \"this is the source I built
@@ -128,15 +243,19 @@
               value)
         (when-not (= (count value) (count (set value)))
           (invalid "definition cids must be a unique CID vector"
-                   {:field field :value value :reason :duplicate})))))
+                   {:field field :value value :reason :duplicate}))))))
 
+#?(:kotoba nil
+   :default
 (defn contract-surfaces-error
   [m prefix]
   (or (contract-vector-error (get m (keyword prefix "provides"))
                              (keyword prefix "provides"))
       (contract-vector-error (get m (keyword prefix "consumes"))
-                             (keyword prefix "consumes"))))
+                             (keyword prefix "consumes")))))
 
+#?(:kotoba nil
+   :default
 (defn- signed-bytes
   "UTF-8 bytes of S. Used to turn the canonical string a package signature
   attests to (its manifest's own declared :manifest-cid -- see
@@ -145,16 +264,20 @@
   `multiformats.core/kotoba-cid` already uses in this dependency)."
   [^String s]
   #?(:clj (kbytes/utf8-bytes s)
-     :cljs (.encode (js/TextEncoder.) s)))
+     :cljs (.encode (js/TextEncoder.) s))))
 
+#?(:kotoba nil
+   :default
 (defn- base64->bytes
   "Decode a base64 signature into the byte shape `ed25519.core/verify` takes on
   this host. Throws on input the host's decoder rejects; callers treat that the
   same as a signature that did not verify."
   [^String sig]
   #?(:clj (kbytes/base64-decode-bytes ^String sig)
-     :cljs (js/Buffer.from sig "base64")))
+     :cljs (js/Buffer.from sig "base64"))))
 
+#?(:kotoba nil
+   :default
 (defn- ed25519-signature-error
   "Real Ed25519 verification of SIG (a base64-encoded signature, the same
   encoding `cacao.core`/`kotoba-lang/org-chainagnostic-cacao` uses) against
@@ -199,8 +322,10 @@
                ;; `:clj`, ClojureScript/nbb still picks `:cljs` (first match).
                {:did did :error #?(:clj (.getMessage ^Exception e)
                                    :cljs (.-message e)
-                                   :default (.-message e))}))))
+                                   :default (.-message e))})))))
 
+#?(:kotoba nil
+   :default
 (defn signatures-error
   "Validates SIGS (a package manifest's :kotoba.package/signatures vector)
   for shape AND for real Ed25519 cryptographic authenticity: each
@@ -234,8 +359,10 @@
                 (when-not (non-empty-string? (:sig sig))
                   (invalid "signature bytes required" {:signature sig}))
                 (ed25519-signature-error (:sig sig) (:did sig) (signed-bytes manifest-cid))))
-          sigs)))
+          sigs))))
 
+#?(:kotoba nil
+   :default
 (defn manifest-without-self-cid
   "MANIFEST with its own self-declared `:manifest-cid` removed, AND its
   `:kotoba.package/signatures` removed. Both are content a manifest's CID is
@@ -261,14 +388,18 @@
   [manifest]
   (-> manifest
       (update :kotoba.package/source dissoc :manifest-cid)
-      (dissoc :kotoba.package/signatures)))
+      (dissoc :kotoba.package/signatures))))
 
+#?(:kotoba nil
+   :default
 (defn compute-manifest-cid
   "The real CIDv1 (canonical DAG-CBOR + sha2-256) of MANIFEST's actual
   content, excluding its own self-declared `:manifest-cid`."
   [manifest]
-  (mf/cidv1-dag-cbor (cbor/encode (manifest-without-self-cid manifest))))
+  (mf/cidv1-dag-cbor (cbor/encode (manifest-without-self-cid manifest)))))
 
+#?(:kotoba nil
+   :default
 (defn manifest-integrity-error
   "nil if MANIFEST's self-declared `:manifest-cid` matches what its content
   actually hashes to; a contract-shaped error otherwise.
@@ -295,8 +426,10 @@
       (let [computed (compute-manifest-cid manifest)]
         (when (not= declared computed)
           (invalid "manifest cid does not match manifest content"
-                   {:declared declared :computed computed}))))))
+                   {:declared declared :computed computed})))))))
 
+#?(:kotoba nil
+   :default
 (defn tree-cid-error
   "Real content-integrity check for a source tree -- the :tree-cid analogue
   of `kotoba.package-admission/manifest-integrity-error` (kotoba-lang/kotoba,
@@ -329,8 +462,10 @@
     (let [computed (mf/cidv1-raw tree-bytes)]
       (when (not= declared computed)
         (invalid "tree cid does not match tree content"
-                 {:declared declared :computed computed})))))
+                 {:declared declared :computed computed}))))))
 
+#?(:kotoba nil
+   :default
 (defn component-cid-of
   "Extract the component CID pin from a lock entry or package build map.
   Accepts either top-level `:dep/component-cid` / `:kotoba.package/component-cid`
@@ -344,8 +479,10 @@
       (when (map? (:dep/build m))
         (get (:dep/build m) :component-cid))
       (when (map? (:kotoba.package/build m))
-        (get (:kotoba.package/build m) :component-cid))))
+        (get (:kotoba.package/build m) :component-cid)))))
 
+#?(:kotoba nil
+   :default
 (defn component-cid-error
   "Shape (+ optional content) check for a component CID pin.
   When COMPONENT-BYTES is supplied, recomputes CIDv1-raw and rejects
@@ -363,8 +500,10 @@
      (let [computed (mf/cidv1-raw component-bytes)]
        (when (not= declared computed)
          (invalid "component cid does not match component content"
-                  {:declared declared :computed computed}))))))
+                  {:declared declared :computed computed})))))))
 
+#?(:kotoba nil
+   :default
 (defn- lock-dep-component-error
   "For :component kind packages, a component-cid pin is mandatory (L3).
   For any kind, a present component-cid must be a real CIDv1. Optional
@@ -380,8 +519,10 @@
       (some? declared)
       (component-cid-error declared component-bytes)
 
-      :else nil)))
+      :else nil))))
 
+#?(:kotoba nil
+   :default
 (defn package-manifest-error
   "2-arity OPTS may carry :tree-bytes -- see `tree-cid-error` -- to also
   recompute-and-compare :tree-cid against real content; omitted (the
@@ -428,8 +569,10 @@
         (invalid "manifest cid required" {:source source}))
       (when-not (vector? (:kotoba.package/capabilities m))
         (invalid "capabilities vector required" {:value (:kotoba.package/capabilities m)}))
-      (signatures-error (:kotoba.package/signatures m) (:manifest-cid source))))))
+      (signatures-error (:kotoba.package/signatures m) (:manifest-cid source)))))))
 
+#?(:kotoba nil
+   :default
 (defn lockfile-error
   "3-arity OPTS may carry :tree-bytes-by-dep -- {dep-name tree-bytes ...} --
   to also recompute-and-compare each dep's :dep/tree-cid against real
@@ -475,12 +618,14 @@
                     (invalid "capability grant exceeds package declaration"
                              {:grant (:dep/capabilities dep)
                               :declared (:declared-capabilities tc)}))))
-            (:deps m))))))
+            (:deps m)))))))
 
+#?(:kotoba nil
+   :default
 (defn validate-case
   [tc data]
   (let [result (case (:type tc)
                  :package-manifest (package-manifest-error data)
                  :lockfile (lockfile-error data tc)
                  (invalid "unknown case type" tc))]
-    (if result result {:valid? true})))
+    (if result result {:valid? true}))))
