@@ -14,8 +14,9 @@
 ;;     scripts/verify_package_contract_twin.cljs
 ;;
 ;; CONFORMANCE=<dir> is lang/package-conformance (default: relative to the cwd).
-;; ONLY=<regex> restricts the case ids; SKIP_SIG=1 skips the cases that verify
-;; an Ed25519 signature (the interpreter takes minutes for one).
+;; ONLY=<regex> restricts the case ids; SKIP_SIG=1 skips the accepted manifests
+;; (the cases that reach the Ed25519 verification; the interpreter takes minutes
+;; for one). A manifest refused before the signature is still compared.
 (ns verify-package-contract-twin
   (:require ["node:fs" :as fs]
             ["node:crypto" :as crypto]
@@ -119,7 +120,7 @@
       cases (edn/read-string (:kotoba.lang.package.conformance/cases (first outer)))]
   (doseq [tc cases
           :when (re-find only (str (:id tc)))
-          :when (not (and skip-sig? (= :package-manifest (:type tc))))]
+          :when (not (and skip-sig? (= :package-manifest (:type tc)) (= :accept (:kind tc))))]
     (let [text (fixture (:file tc))
           data (edn/read-string text)
           host (let [r (c/validate-case tc data)] (if (:valid? r) "" (verdict r)))]
