@@ -1,19 +1,26 @@
 (ns kotoba.lang.package-contract
-  {:kotoba/export #?(:kotoba [cid? non-empty-string?]
+  {:kotoba/export #?(:kotoba [allowed-package-kinds cid? component-cid-error component-cid-of compute-manifest-cid contract-keyword? contract-surfaces-error contract-vector-error definition-cids-error invalid lock-required lockfile-error manifest-integrity-error manifest-required manifest-without-self-cid missing-key non-empty-string? package-manifest-error package-manifest-error-with-tree signatures-error tree-cid-error validate-case]
                      :default [allowed-package-kinds cid? component-cid-error component-cid-of compute-manifest-cid contract-keyword? contract-surfaces-error contract-vector-error definition-cids-error invalid lock-required lockfile-error manifest-integrity-error manifest-required manifest-without-self-cid missing-key non-empty-string? package-manifest-error signatures-error tree-cid-error validate-case])}
   (:require [kotoba.lang.text :as str]
-            #?@(:kotoba [] :default [[kotoba.bytes :as kbytes] [cbor.core :as cbor]
+            #?@(:kotoba [[kotoba.form :as form] [kotoba.bytes :as kbytes] [cbor.core :as cbor]
+                         [multiformats.core :as mf] [ed25519.core :as ed25519]]
+                :default [[kotoba.bytes :as kbytes] [cbor.core :as cbor]
                           [kotoba.lang.coll :as coll]
                           [multiformats.core :as mf]
-                          [ed25519.core :as ed25519]])))
+                          [ed25519.core :as ed25519]]))
+  ;; Kotoba: the dynamic value of a manifest / lock is the recursive `:form/r`
+  ;; record of kotoba.form (the same schema, so the same type).
+  #?(:kotoba (:schemas {:form/r [:record :form/r [[:tag :i64] [:s :string] [:n :i64] [:k :keyword]
+                                                  [:kids [:list [:ref :form/r]]] [:span :i64] [:data :bytes]]]})))
 
 ;; ── the Kotoba reading of this file ─────────────────────────────────────────
 ;; `#?(:kotoba A :default B)`: the Kotoba reader takes A, the JVM and
 ;; ClojureScript readers take B, so every host body below is what it was.
-;; The Kotoba surface is `non-empty-string?` and `cid?`, the two predicates of
-;; scalars; everything else validates EDN manifests and lockfiles (maps whose
-;; shape is only known at run time), uses CBOR and Ed25519, and exists on the
-;; hosts only. `cid?` reads the CID's bytes itself rather than through
+;; The Kotoba surface is the whole export list: the two scalar predicates
+;; `non-empty-string?` and `cid?`, and -- restated over `kotoba.form`'s recursive
+;; Form record, at the end of this file -- the manifest and lockfile validators
+;; (maps whose shape is only known at run time) with their CBOR cid and Ed25519
+;; checks. `cid?` reads the CID's bytes itself rather than through
 ;; `multiformats.core/cid->bytes`, which traps on a bad character where the
 ;; host catches its throw and answers false; a varint longer than nine groups
 ;; is false there (the host's shift wraps past 64 bits).
@@ -629,3 +636,523 @@
                  :lockfile (lockfile-error data tc)
                  (invalid "unknown case type" tc))]
     (if result result {:valid? true}))))
+
+;; ── the Kotoba reading of the manifest and lock validators ──────────────────
+;; Everything below exists on the Kotoba route only (`#?(:kotoba ...)`, dropped
+;; by the host readers), and is the host code above restated over `kotoba.form`'s
+;; recursive Form record -- the one value type that carries a manifest or a lock
+;; (maps of unknown shape, nested without bound). A host `nil` is `(form/nil-form)`:
+;; an ERROR RESULT is a Form map `{:valid? false :message .. :data ..}` and "no
+;; error" is the nil Form, so a caller tests `(form/is-nil? e)` where the host
+;; tests `when-let`. `(get m k)` on anything that is not a map answers nil, as
+;; `(:k x)` does on the host.
+;;
+;; Where it differs, each measured against the host body above:
+;;   * optional byte arguments are `[:option :vector-i64]` (the host's nil/bytes);
+;;     the opts map of the 3-arity `lockfile-error` is a Form map whose
+;;     per-dependency values are Form bytes leaves (`form/bytes-form`);
+;;   * the 2-arity `package-manifest-error` is `package-manifest-error-with-tree`;
+;;   * `:allowed` (a set) lists the five kinds in a fixed order, and `:signers`
+;;     of the untrusted-signer error lists them in the lock's order, deduplicated;
+;;     the host's order is its hash order;
+;;   * the `:error` datum of a signature that does not verify is a fixed phrase
+;;     (the host puts the exception's message there);
+;;   * a `:kotoba.package/signatures` that is neither a vector, list nor set is
+;;     "signature required" where the host would throw;
+;;   * the signature is decoded with `kotoba.bytes/base64-decode-bytes` (the
+;;     JDK's strict decoder, as the host), the message is the UTF-8 bytes of the
+;;     manifest cid, and the proof is `ed25519.core/verify-did`;
+;;   * `compute-manifest-cid` is `cbor/encode-form` over the manifest without its
+;;     self cid and signatures, which traps on a set or symbol leaf (the host
+;;     encoder has no such leaf either for a manifest read from EDN).
+
+#?(:kotoba
+(defn- kwf [k :keyword] [:ref :form/r] (form/keyword-form k)))
+
+#?(:kotoba
+(defn- gk [m [:ref :form/r] k :keyword] [:ref :form/r]
+  (if (form/is-map? m) (form/form-get m (form/keyword-form k)) (form/nil-form))))
+
+#?(:kotoba
+(defn- has-k? [m [:ref :form/r] k :keyword] :bool
+  (and (form/is-map? m) (form/form-has? m (form/keyword-form k)))))
+
+#?(:kotoba
+(defn- lookup [m [:ref :form/r] k [:ref :form/r]] [:ref :form/r]
+  (if (form/is-map? m) (form/form-get m k) (form/nil-form))))
+
+;; `some?`-and-not-false: what `or` / `when` / `when-let` treat as present.
+#?(:kotoba
+(defn- truthy? [x [:ref :form/r]] :bool
+  (not (or (form/is-nil? x)
+           (and (form/is-bool? x) (not (form/bool-value x)))))))
+
+#?(:kotoba
+(defn- empty-form? [x [:ref :form/r]] :bool
+  (cond (form/is-nil? x) true
+        (form/is-string? x) (= 0 (string-byte-length (form/string-value x)))
+        (or (form/is-seq? x) (form/is-vec? x) (form/is-set? x) (form/is-map? x)) (= 0 (form/count-of x))
+        :else false)))
+
+#?(:kotoba
+(defn- map1 [k1 :keyword v1 [:ref :form/r]] [:ref :form/r]
+  (form/form-map (form/two-forms (form/keyword-form k1) v1))))
+
+#?(:kotoba
+(defn- map2 [k1 :keyword v1 [:ref :form/r] k2 :keyword v2 [:ref :form/r]] [:ref :form/r]
+  (form/form-map (typed-list-new [:list [:ref :form/r]]
+                                 (form/keyword-form k1) v1 (form/keyword-form k2) v2))))
+
+#?(:kotoba
+(defn invalid [message :string data [:ref :form/r]] [:ref :form/r]
+  (form/form-map (typed-list-new [:list [:ref :form/r]]
+                                 (form/keyword-form :valid?) (form/bool-form false)
+                                 (form/keyword-form :message) (form/string-form message)
+                                 (form/keyword-form :data) data))))
+
+#?(:kotoba
+(defn manifest-required [] [:ref :form/r]
+  (form/form-vec (typed-list-new [:list [:ref :form/r]]
+                                 (kwf :kotoba.package/name) (kwf :kotoba.package/version)
+                                 (kwf :kotoba.package/repo-rid) (kwf :kotoba.package/source)
+                                 (kwf :kotoba.package/capabilities) (kwf :kotoba.package/signatures)))))
+
+#?(:kotoba
+(defn lock-required [] [:ref :form/r]
+  (form/form-vec (typed-list-new [:list [:ref :form/r]]
+                                 (kwf :dep/name) (kwf :dep/version) (kwf :dep/repo-rid)
+                                 (kwf :dep/commit) (kwf :dep/tree-cid) (kwf :dep/manifest-cid)
+                                 (kwf :dep/signers) (kwf :dep/capabilities)))))
+
+#?(:kotoba
+(defn allowed-package-kinds [] [:ref :form/r]
+  (form/form-set (typed-list-new [:list [:ref :form/r]]
+                                 (kwf :library) (kwf :adapter) (kwf :schema-contract)
+                                 (kwf :tool) (kwf :component)))))
+
+#?(:kotoba
+(defn- has-member? [xs [:ref :form/r] x [:ref :form/r]] :bool
+  (let [n (form/count-of xs)]
+    (loop [i 0]
+      (if (>= i n)
+        false
+        (if (form/eq (form/nth-of xs i) x) true (recur (+ i 1))))))))
+
+#?(:kotoba
+(defn- allowed-kind? [k [:ref :form/r]] :bool
+  (has-member? (allowed-package-kinds) k)))
+
+;; The EDN text of a keyword without its colon, namespace included
+;; (`(subs (str k) 1)`).
+#?(:kotoba
+(defn- keyword-text [k [:ref :form/r]] :string
+  (let [s (document-edn-print (document-keyword (form/keyword-value k)))]
+    (string-substring s 1 (string-byte-length s)))))
+
+#?(:kotoba
+(defn contract-keyword? [x [:ref :form/r]] :bool
+  (and (form/is-keyword? x)
+       (let [s (keyword-text x)]
+         (or (str/starts-with? s "app.kotoba.")
+             (str/starts-with? s "wire.kotoba."))))))
+
+#?(:kotoba
+(defn- cid-form? [x [:ref :form/r]] :bool
+  (and (form/is-string? x) (cid? (form/string-value x)))))
+
+#?(:kotoba
+(defn- nonblank-form? [x [:ref :form/r]] :bool
+  (and (form/is-string? x) (non-empty-string? (form/string-value x)))))
+
+#?(:kotoba
+(defn missing-key [m [:ref :form/r] ks [:ref :form/r] message :string] [:ref :form/r]
+  (let [n (form/count-of ks)]
+    (loop [i 0]
+      (if (>= i n)
+        (form/nil-form)
+        (let [k (form/nth-of ks i)]
+          (if (and (form/is-map? m) (form/form-has? m k))
+            (recur (+ i 1))
+            (invalid message (map1 :missing k)))))))))
+
+#?(:kotoba
+(defn contract-vector-error [value [:ref :form/r] field [:ref :form/r]] [:ref :form/r]
+  (if (and (not (form/is-nil? value)) (not (form/is-vec? value)))
+    (invalid "contract surface vector required" (map2 :field field :value value))
+    (let [n (form/count-of value)]
+      (loop [i 0]
+        (if (>= i n)
+          (form/nil-form)
+          (let [c (form/nth-of value i)]
+            (if (contract-keyword? c)
+              (recur (+ i 1))
+              (invalid "contract surface keyword required" (map2 :field field :value c))))))))))
+
+#?(:kotoba
+(defn contract-surfaces-error [m [:ref :form/r] prefix :string] [:ref :form/r]
+  (let [pk (keyword-from-string (str prefix "/provides"))
+        ck (keyword-from-string (str prefix "/consumes"))
+        e1 (contract-vector-error (gk m pk) (form/keyword-form pk))]
+    (if (form/is-nil? e1)
+      (contract-vector-error (gk m ck) (form/keyword-form ck))
+      e1))))
+
+;; Is there an item of XS, before index I, equal to the item at I?
+#?(:kotoba
+(defn- dup-before? [xs [:ref :form/r] i :i64] :bool
+  (let [x (form/nth-of xs i)]
+    (loop [j 0]
+      (if (>= j i)
+        false
+        (if (form/eq (form/nth-of xs j) x) true (recur (+ j 1))))))))
+
+#?(:kotoba
+(defn- has-dup? [xs [:ref :form/r]] :bool
+  (let [n (form/count-of xs)]
+    (loop [i 1]
+      (if (>= i n)
+        false
+        (if (dup-before? xs i) true (recur (+ i 1))))))))
+
+#?(:kotoba
+(defn- first-non-cid [xs [:ref :form/r]] [:ref :form/r]
+  (let [n (form/count-of xs)]
+    (loop [i 0]
+      (if (>= i n)
+        (form/nil-form)
+        (if (cid-form? (form/nth-of xs i)) (recur (+ i 1)) (form/nth-of xs i)))))))
+
+#?(:kotoba
+(defn- not-a-cid-index [xs [:ref :form/r]] :i64
+  (let [n (form/count-of xs)]
+    (loop [i 0]
+      (if (>= i n)
+        -1
+        (if (cid-form? (form/nth-of xs i)) (recur (+ i 1)) i))))))
+
+#?(:kotoba
+(defn definition-cids-error [value [:ref :form/r] field [:ref :form/r]] [:ref :form/r]
+  (cond
+    (form/is-nil? value) (form/nil-form)
+    (not (form/is-vec? value))
+    (invalid "definition cids must be a unique CID vector"
+             (form/form-map (typed-list-new [:list [:ref :form/r]]
+                                            (kwf :field) field (kwf :value) value
+                                            (kwf :reason) (kwf :not-a-vector))))
+    :else
+    (let [bad (not-a-cid-index value)]
+      (if (>= bad 0)
+        (invalid "definition cids must be a unique CID vector"
+                 (form/form-map (typed-list-new [:list [:ref :form/r]]
+                                                (kwf :field) field (kwf :value) (form/nth-of value bad)
+                                                (kwf :reason) (kwf :not-a-cid))))
+        (if (has-dup? value)
+          (invalid "definition cids must be a unique CID vector"
+                   (form/form-map (typed-list-new [:list [:ref :form/r]]
+                                                  (kwf :field) field (kwf :value) value
+                                                  (kwf :reason) (kwf :duplicate))))
+          (form/nil-form)))))))
+
+;; ---- signatures ----------------------------------------------------------
+
+#?(:kotoba
+(defn- did-error [did :string reason :string] [:ref :form/r]
+  (invalid "signature verification failed"
+           (map2 :did (form/string-form did) :error (form/string-form reason)))))
+
+;; nil when SIG (base64) is a signature of SIGNED under the key of DID.
+#?(:kotoba
+(defn- ed25519-signature-error [sig :string did :string signed :vector-i64] [:ref :form/r]
+  (let [raw (kbytes/base64-decode-bytes sig)]
+    (if (option-some?-of [:option :bytes] raw)
+      (let [v (ed25519/verify-did did signed
+                                  (vector-i64-from-bytes
+                                   (option-value-of [:option :bytes] raw (bytes-empty))))]
+        (if (option-some?-of [:option :bool] v)
+          (if (option-value-of [:option :bool] v false)
+            (form/nil-form)
+            (invalid "signature verification failed" (map1 :did (form/string-form did))))
+          (did-error did "malformed did:key")))
+      (did-error did "illegal base64")))))
+
+#?(:kotoba
+(defn- sig-keys [] [:ref :form/r]
+  (form/form-vec (typed-list-new [:list [:ref :form/r]] (kwf :did) (kwf :alg) (kwf :sig)))))
+
+#?(:kotoba
+(defn- one-signature-error [sig [:ref :form/r] signed :vector-i64] [:ref :form/r]
+  (let [e (missing-key sig (sig-keys) "signature missing required field")]
+    (cond
+      (not (form/is-nil? e)) e
+      (not (nonblank-form? (gk sig :did))) (invalid "signature did required" (map1 :signature sig))
+      (not (form/eq (gk sig :alg) (kwf :ed25519))) (invalid "signature alg unsupported" (map1 :signature sig))
+      (not (nonblank-form? (gk sig :sig))) (invalid "signature bytes required" (map1 :signature sig))
+      :else (ed25519-signature-error (form/string-value (gk sig :sig))
+                                     (form/string-value (gk sig :did))
+                                     signed)))))
+
+#?(:kotoba
+(defn signatures-error [sigs [:ref :form/r] manifest-cid [:ref :form/r]] [:ref :form/r]
+  (if (or (empty-form? sigs)
+          (not (or (form/is-vec? sigs) (form/is-seq? sigs) (form/is-set? sigs))))
+    (invalid "signature required" (form/form-map (form/no-forms)))
+    (let [n (form/count-of sigs)
+          signed (kbytes/utf8-encode (if (form/is-string? manifest-cid)
+                                       (form/string-value manifest-cid)
+                                       ""))]
+      (loop [i 0]
+        (if (>= i n)
+          (form/nil-form)
+          (let [e (one-signature-error (form/nth-of sigs i) signed)]
+            (if (form/is-nil? e) (recur (+ i 1)) e))))))))
+
+;; ---- manifest cid ----------------------------------------------------------
+
+#?(:kotoba
+(defn manifest-without-self-cid [manifest [:ref :form/r]] [:ref :form/r]
+  (let [m0 (if (form/is-map? manifest) manifest (form/form-map (form/no-forms)))
+        src (gk m0 :kotoba.package/source)
+        src2 (if (form/is-map? src) (form/dissoc-form src (kwf :manifest-cid)) src)]
+    (form/dissoc-form (form/assoc-form m0 (kwf :kotoba.package/source) src2)
+                      (kwf :kotoba.package/signatures)))))
+
+#?(:kotoba
+(defn compute-manifest-cid [manifest [:ref :form/r]] :string
+  (mf/cidv1-dag-cbor (cbor/encode-form (manifest-without-self-cid manifest)))))
+
+#?(:kotoba
+(defn manifest-integrity-error [manifest [:ref :form/r]] [:ref :form/r]
+  (let [declared (gk (gk manifest :kotoba.package/source) :manifest-cid)]
+    (if (cid-form? declared)
+      (let [computed (compute-manifest-cid manifest)]
+        (if (string=? (form/string-value declared) computed)
+          (form/nil-form)
+          (invalid "manifest cid does not match manifest content"
+                   (map2 :declared declared :computed (form/string-form computed)))))
+      (form/nil-form)))))
+
+#?(:kotoba
+(defn tree-cid-error [declared [:ref :form/r] tree-bytes [:option :vector-i64]] [:ref :form/r]
+  (cond
+    (not (cid-form? declared)) (invalid "tree cid required" (map1 :value declared))
+    (not (option-some?-of [:option :vector-i64] tree-bytes))
+    (invalid "tree content required to verify tree cid" (map1 :declared declared))
+    :else
+    (let [computed (mf/cidv1-raw (option-value-of [:option :vector-i64] tree-bytes (vector-i64)))]
+      (if (string=? (form/string-value declared) computed)
+        (form/nil-form)
+        (invalid "tree cid does not match tree content"
+                 (map2 :declared declared :computed (form/string-form computed))))))))
+
+;; ---- component cid -----------------------------------------------------------
+
+#?(:kotoba
+(defn component-cid-of [m [:ref :form/r]] [:ref :form/r]
+  (let [a (gk m :dep/component-cid)]
+    (if (truthy? a)
+      a
+      (let [b (gk m :kotoba.package/component-cid)]
+        (if (truthy? b)
+          b
+          (let [c (gk (gk m :dep/build) :component-cid)]
+            (if (truthy? c)
+              c
+              (let [d (gk (gk m :kotoba.package/build) :component-cid)]
+                (if (truthy? d) d (form/nil-form)))))))))))
+
+#?(:kotoba
+(defn component-cid-error [declared [:ref :form/r] component-bytes [:option :vector-i64]] [:ref :form/r]
+  (cond
+    (not (cid-form? declared)) (invalid "component cid required" (map1 :value declared))
+    (not (option-some?-of [:option :vector-i64] component-bytes)) (form/nil-form)
+    :else
+    (let [computed (mf/cidv1-raw (option-value-of [:option :vector-i64] component-bytes (vector-i64)))]
+      (if (string=? (form/string-value declared) computed)
+        (form/nil-form)
+        (invalid "component cid does not match component content"
+                 (map2 :declared declared :computed (form/string-form computed))))))))
+
+#?(:kotoba
+(defn- lock-dep-component-error [dep [:ref :form/r] component-bytes [:option :vector-i64]] [:ref :form/r]
+  (let [kind (gk dep :dep/kind)
+        declared (component-cid-of dep)]
+    (cond
+      (and (form/eq kind (kwf :component)) (form/is-nil? declared))
+      (invalid "component cid required"
+               (map2 :dependency (gk dep :dep/name) :kind kind))
+      (not (form/is-nil? declared)) (component-cid-error declared component-bytes)
+      :else (form/nil-form)))))
+
+;; ---- package manifest ------------------------------------------------------------
+
+#?(:kotoba
+(defn- source-keys [] [:ref :form/r]
+  (form/form-vec (typed-list-new [:list [:ref :form/r]]
+                                 (kwf :git-commit) (kwf :tree-cid) (kwf :manifest-cid)))))
+
+;; Check number I of `package-manifest-error`, in the host's order; nil when it holds.
+#?(:kotoba
+(defn- manifest-step [m [:ref :form/r] tree [:option :vector-i64] i :i64] [:ref :form/r]
+  (let [source (gk m :kotoba.package/source)
+        kind (gk m :kotoba.package/kind)
+        pname (gk m :kotoba.package/name)]
+    (cond
+      (= i 0) (missing-key m (manifest-required) "missing required package field")
+      (= i 1) (if (and (truthy? kind) (not (allowed-kind? kind)))
+                (invalid "unknown package kind"
+                         (map2 :package pname :allowed (allowed-package-kinds)))
+                (form/nil-form))
+      (= i 2) (contract-surfaces-error m "kotoba.package")
+      (= i 3) (if (and (form/eq kind (kwf :adapter))
+                       (empty-form? (gk m :kotoba.package/consumes)))
+                (invalid "adapter consumes required" (map1 :package pname))
+                (form/nil-form))
+      (= i 4) (if (and (form/eq kind (kwf :schema-contract))
+                       (empty-form? (gk m :kotoba.package/provides)))
+                (invalid "schema-contract provides required" (map1 :package pname))
+                (form/nil-form))
+      (= i 5) (if (cid-form? (gk m :kotoba.package/repo-rid))
+                (form/nil-form)
+                (invalid "repo-rid cid required" (map1 :value (gk m :kotoba.package/repo-rid))))
+      (= i 6) (missing-key source (source-keys) "missing required source field")
+      (= i 7) (if (cid-form? (gk source :tree-cid))
+                (form/nil-form)
+                (invalid "tree cid required" (map1 :source source)))
+      (= i 8) (if (option-some?-of [:option :vector-i64] tree)
+                (tree-cid-error (gk source :tree-cid) tree)
+                (form/nil-form))
+      (= i 9) (if (cid-form? (gk source :manifest-cid))
+                (form/nil-form)
+                (invalid "manifest cid required" (map1 :source source)))
+      (= i 10) (if (form/is-vec? (gk m :kotoba.package/capabilities))
+                 (form/nil-form)
+                 (invalid "capabilities vector required"
+                          (map1 :value (gk m :kotoba.package/capabilities))))
+      :else (signatures-error (gk m :kotoba.package/signatures) (gk source :manifest-cid))))))
+
+#?(:kotoba
+(defn package-manifest-error-with-tree [m [:ref :form/r] tree-bytes [:option :vector-i64]] [:ref :form/r]
+  (loop [i 0]
+    (if (> i 11)
+      (form/nil-form)
+      (let [e (manifest-step m tree-bytes i)]
+        (if (form/is-nil? e) (recur (+ i 1)) e))))))
+
+#?(:kotoba
+(defn package-manifest-error [m [:ref :form/r]] [:ref :form/r]
+  (package-manifest-error-with-tree m (option-none-of [:option :vector-i64]))))
+
+;; ---- lockfile ---------------------------------------------------------------------
+
+#?(:kotoba
+(defn- signer-blocked? [s [:ref :form/r] tc [:ref :form/r]] :bool
+  (or (has-member? (gk tc :revoked-signers) s)
+      (has-member? (gk tc :expired-signers) s)
+      (has-member? (gk tc :compromised-signers) s))))
+
+;; The signers of SIGNERS that are blocked, each once, in the lock's order.
+#?(:kotoba
+(defn- blocked-signers [signers [:ref :form/r] tc [:ref :form/r]] [:ref :form/r]
+  (let [n (form/count-of signers)]
+    (form/form-vec
+     (loop [i 0 acc (form/no-forms)]
+       (if (>= i n)
+         acc
+         (let [s (form/nth-of signers i)]
+           (recur (+ i 1)
+                  (if (and (signer-blocked? s tc)
+                           (not (has-member? (form/form-vec acc) s)))
+                    (form/append-form acc s)
+                    acc)))))))))
+
+;; Is every item of XS a member of YS?
+#?(:kotoba
+(defn- subset-of? [xs [:ref :form/r] ys [:ref :form/r]] :bool
+  (let [n (form/count-of xs)]
+    (loop [i 0]
+      (if (>= i n)
+        true
+        (if (has-member? ys (form/nth-of xs i)) (recur (+ i 1)) false))))))
+
+#?(:kotoba
+(defn- cid-field-error [dep [:ref :form/r] k :keyword] [:ref :form/r]
+  (if (cid-form? (gk dep k))
+    (form/nil-form)
+    (invalid "cid required" (map2 :field (kwf k) :value (gk dep k))))))
+
+#?(:kotoba
+(defn- bytes-opt [x [:ref :form/r]] [:option :vector-i64]
+  (if (form/is-bytes? x)
+    (option-some-of [:option :vector-i64] (vector-i64-from-bytes (form/bytes-of x)))
+    (option-none-of [:option :vector-i64]))))
+
+;; Check number I of one lock entry, in the host's order; nil when it holds.
+#?(:kotoba
+(defn- dep-step [dep [:ref :form/r] tc [:ref :form/r] opts [:ref :form/r] i :i64] [:ref :form/r]
+  (let [dname (gk dep :dep/name)]
+    (cond
+      (= i 0) (missing-key dep (lock-required) "missing required lock field")
+      (= i 1) (if (and (truthy? (gk dep :dep/kind)) (not (allowed-kind? (gk dep :dep/kind))))
+                (invalid "unknown package kind" (map1 :dependency dname))
+                (form/nil-form))
+      (= i 2) (contract-surfaces-error dep "dep")
+      (= i 3) (cid-field-error dep :dep/repo-rid)
+      (= i 4) (cid-field-error dep :dep/tree-cid)
+      (= i 5) (cid-field-error dep :dep/manifest-cid)
+      (= i 6) (definition-cids-error (gk dep :dep/definition-cids) (kwf :dep/definition-cids))
+      (= i 7) (let [tb (lookup (gk opts :tree-bytes-by-dep) dname)]
+                (if (truthy? tb)
+                  (tree-cid-error (gk dep :dep/tree-cid) (bytes-opt tb))
+                  (form/nil-form)))
+      (= i 8) (lock-dep-component-error dep (bytes-opt (lookup (gk opts :component-bytes-by-dep) dname)))
+      (= i 9) (if (empty-form? (gk dep :dep/signers))
+                (invalid "signer required" (map1 :dep dep))
+                (form/nil-form))
+      (= i 10) (let [bad (blocked-signers (gk dep :dep/signers) tc)]
+                 (if (empty-form? bad)
+                   (form/nil-form)
+                   (invalid "signer not currently trusted" (map2 :signers bad :dependency dname))))
+      :else (if (subset-of? (gk dep :dep/capabilities) (gk tc :declared-capabilities))
+              (form/nil-form)
+              (invalid "capability grant exceeds package declaration"
+                       (map2 :grant (gk dep :dep/capabilities)
+                             :declared (gk tc :declared-capabilities))))))))
+
+#?(:kotoba
+(defn- dep-error [dep [:ref :form/r] tc [:ref :form/r] opts [:ref :form/r]] [:ref :form/r]
+  (loop [i 0]
+    (if (> i 11)
+      (form/nil-form)
+      (let [e (dep-step dep tc opts i)]
+        (if (form/is-nil? e) (recur (+ i 1)) e))))))
+
+#?(:kotoba
+(defn- deps-error [deps [:ref :form/r] tc [:ref :form/r] opts [:ref :form/r]] [:ref :form/r]
+  (let [n (form/count-of deps)]
+    (loop [i 0]
+      (if (>= i n)
+        (form/nil-form)
+        (let [e (dep-error (form/nth-of deps i) tc opts)]
+          (if (form/is-nil? e) (recur (+ i 1)) e)))))))
+
+;; OPTS: a Form map that may carry :tree-bytes-by-dep and :component-bytes-by-dep
+;; ({dep-name bytes-leaf}); pass `(form/form-map (form/no-forms))` for none.
+#?(:kotoba
+(defn lockfile-error [m [:ref :form/r] tc [:ref :form/r] opts [:ref :form/r]] [:ref :form/r]
+  (let [version (gk m :kotoba.lock/version)
+        deps (gk m :deps)]
+    (cond
+      (not (form/eq version (form/int-form 1))) (invalid "lock version 1 required" (map1 :value version))
+      (not (form/is-vec? deps)) (invalid "lock deps vector required" (map1 :value deps))
+      :else (deps-error deps tc opts)))))
+
+#?(:kotoba
+(defn validate-case [tc [:ref :form/r] data [:ref :form/r]] [:ref :form/r]
+  (let [kind (gk tc :type)
+        result (cond
+                 (form/eq kind (kwf :package-manifest)) (package-manifest-error data)
+                 (form/eq kind (kwf :lockfile)) (lockfile-error data tc (form/form-map (form/no-forms)))
+                 :else (invalid "unknown case type" tc))]
+    (if (form/is-nil? result)
+      (map1 :valid? (form/bool-form true))
+      result))))
