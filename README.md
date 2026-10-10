@@ -62,3 +62,14 @@ Definition CIDs do **not** change when a package gains a reference provider —
 provider status and digests are outside the semantic definition block.
 Production signing remains a separate ceremony.
 
+
+## Target-neutral and distributed stack architecture
+
+Owns existing source/package/capability boundaries. Target-neutral execution descriptors currently in abi are the planned migration candidate, after full export/consumer inventory and a versioned contract. This repository does not absorb language, VM or protocol semantics. Existing codec/crypto/I/O dependencies must be measured per entrypoint before claiming a contract-only closure.
+
+See the [owner integration guide and dependency direction](docs/stack-architecture.md),
+[composition metadata](spec/stack-integration.edn), and
+[whole-stack refactor procedure](https://github.com/kotoba-lang/kotoba-lang/blob/main/docs/stack-refactor-procedure.md).
+The direction is adopted; runtime contract migration and qualification remain
+explicit, separately verified work. Tier labels are responsibility axes, not
+a single dependency ranking.
