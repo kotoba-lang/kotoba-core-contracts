@@ -14,6 +14,18 @@
          :expires-at "2026-10-10T01:00:00Z" :uses 1
          :transfer :same-artifact :delegation-depth 0))
 
+(deftest intent-is-distinct-from-completed-identity
+  (let [intent (-> identity-v2
+                   (dissoc :outcome-cid :host-receipt-cids)
+                   (assoc :format :kotoba.execution-intent/v2 :invocation-cid cid))]
+    (is (execution/valid-execution-intent? intent))
+    (is (not (execution/valid-execution-identity? intent)))
+    (is (not (execution/valid-execution-intent? identity-v2)))
+    (doseq [k (keys intent)]
+      (is (not (execution/valid-execution-intent? (dissoc intent k)))))
+    (doseq [k [:outcome-cid :host-receipt-cids :host-handle :component-cid]]
+      (is (not (execution/valid-execution-intent? (assoc intent k cid)))))))
+
 (deftest cid-is-structural-and-complete
   (is (execution/cid? cid))
   (doseq [bad [nil "banana" "b" (subs cid 0 20) 42]]
