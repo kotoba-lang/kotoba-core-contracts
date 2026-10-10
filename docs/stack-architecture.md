@@ -6,7 +6,7 @@ future boundaries; they do not change runtime schemas or certify migration.
 
 ## Responsibility
 
-Owns existing source/package/capability boundaries. Target-neutral execution descriptors currently in abi are the planned migration candidate, after full export/consumer inventory and a versioned contract. This repository does not absorb language, VM or protocol semantics. Existing codec/crypto/I/O dependencies must be measured per entrypoint before claiming a contract-only closure.
+Owns existing source/package/capability boundaries. Target-neutral execution descriptors are implemented in `kotoba.core.execution`; Component/WIT profiles and the unchanged mixed v1 compatibility codec remain in `kotoba.abi.component`. This repository does not absorb language, VM or protocol semantics. Existing codec/crypto/I/O dependencies must be measured per entrypoint before claiming a contract-only closure.
 
 ## Contract dependency direction
 
@@ -42,3 +42,5 @@ target × host × operation × consistency.
 Keep source dependencies, artifact flow, runtime composition and service
 relationships separate. No readiness follows for debugger/live editing, heap
 image restoration, selfhost, C-free production or physical hardware.
+
+The implemented API boundary is specified in [execution-contract.edn](../spec/execution-contract.edn). Neutral source closure is measured separately from repository dependency closure. Existing package/codec helpers remain separate entrypoints.
