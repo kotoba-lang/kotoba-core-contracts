@@ -7,6 +7,9 @@ This repo owns semantic contracts used by the launcher/runtime:
 
 - `resources/kotoba/lang/source_contract.edn`
 - `resources/kotoba/runtime/capability_contract.edn`
+- `resources/kotoba/runtime/boundary_contract.edn` — judgment-free boundary
+  encoding descriptor (`:kotoba.lisp-machine/boundary-v1`, shapes only; see
+  `kotoba-lang/kotoba-lang` `docs/adr/ADR-kotoba-lisp-machine-contract-decisions.md` D1)
 - `src/kotoba/core/contracts.cljk`
 - `src/kotoba/core/actor_capability.cljk` — actor responsibility to bounded
   `actor:host` authority, envelope emission, and host-neutral revalidation
