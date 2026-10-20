@@ -1,12 +1,16 @@
 (ns kotoba.core.contracts
   "CLJC accessors and validation for Kotoba core EDN contracts."
-  {:kotoba/export [accepted-source? capability-contract-resource capability-id capability-name host-import-order host-imports policy-capabilities source-contract-resource source-extension source-kind source-plan validate-all validate-capability-contract validate-source-contract]}
+  {:kotoba/export [accepted-source? boundary-contract boundary-contract-resource capability-contract-resource capability-id capability-name host-import-order host-imports policy-capabilities source-contract-resource source-extension source-kind source-plan validate-all validate-capability-contract validate-source-contract]}
   (:require [kotoba.lang.text :as str]
             #?(:clj [kotoba.lang.edn :as edn] :org.babashka/nbb [kotoba.lang.edn :as edn])
             #?(:clj [kotoba.io :as io] :org.babashka/nbb [kotoba.io :as io])))
 
 (def source-contract-resource "kotoba/lang/source_contract.edn")
 (def capability-contract-resource "kotoba/runtime/capability_contract.edn")
+;; Judgment-free boundary encoding descriptor (:kotoba.lisp-machine/boundary-v1,
+;; ADR-kotoba-lisp-machine-contract-decisions.md D1). Shapes only: this contract
+;; carries no implementation placement and no policy decision.
+(def boundary-contract-resource "kotoba/runtime/boundary_contract.edn")
 
 ;; kbb (the org.babashka/nbb engine) reads the same classpath resource: its
 ;; JVM-compatibility layer provides clojure.java.io/resource and slurp over the
@@ -39,6 +43,13 @@
    :org.babashka/nbb
    (defn capability-contract []
      (resource-edn capability-contract-resource)))
+
+#?(:clj
+   (defn boundary-contract []
+     (resource-edn boundary-contract-resource))
+   :org.babashka/nbb
+   (defn boundary-contract []
+     (resource-edn boundary-contract-resource)))
 
 (defn source-extension
   "Return the lowercase extension for a path-like string, including the dot."
