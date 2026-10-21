@@ -30,10 +30,14 @@ or host import ABI shape.
 kbb -M:test
 ```
 
-## Atomic capability repositories
+## Atomic capability packages
 
-An authority capability has exactly one public repository. Composition
-capabilities remain in Tamaki and never receive HostCaps directly.
+An authority capability has its own logical package and admission boundary.
+The maintained sources now co-locate in `capabilities/kotoba.capability.*`;
+`capabilities/catalog.json` maps each dotted source ID and exact old repository
+alias to that subtree. Composition capabilities remain in Tamaki and never
+receive HostCaps directly. The authority's own default dependency/classpath
+closure is unchanged; providers are explicit opt-in package roots.
 
 Capability imports follow Kotoba's Unison-like semantic identity boundary:
 the repository name and Radicle RID are discovery aliases, while
@@ -64,6 +68,10 @@ when they publish:
 Definition CIDs do **not** change when a package gains a reference provider —
 provider status and digests are outside the semantic definition block.
 Production signing remains a separate ceremony.
+
+See [the source co-location decision](docs/adr/0002-capability-source-monorepo.md)
+for verified source/history mappings, semantic CID aliases, the unregistered
+package refusals and the distinction between source lookup and admission.
 
 
 ## Target-neutral and distributed stack architecture

@@ -1,0 +1,45 @@
+{
+  "repository-before-archive": {
+    "id": "R_kgDOTlnpAQ",
+    "databaseId": 1314515201,
+    "nameWithOwner": "kotoba-lang/capability-contacts-read",
+    "isPrivate": false,
+    "isArchived": false,
+    "pushedAt": "2026-09-24T03:57:35Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "01e1b98bac107273cc0d4c4513f3843605d6bc3b"
+      }
+    },
+    "heads": {
+      "totalCount": 1,
+      "nodes": [
+        {
+          "name": "main",
+          "target": {
+            "oid": "01e1b98bac107273cc0d4c4513f3843605d6bc3b"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 0
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  },
+  "closed-pulls": []
+}
