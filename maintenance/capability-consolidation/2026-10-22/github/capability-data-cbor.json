@@ -414,5 +414,61 @@
       "reviews": [],
       "review-comments": []
     }
-  ]
+  ],
+  "archive-readback": {
+    "repository": "kotoba-lang/capability-data-cbor",
+    "action": "archive-readback",
+    "archived": true,
+    "source-and-refs-unchanged": true,
+    "qualified-main": "301f2310ca900f843bc801ead7f1500fe60ad64c",
+    "at": "2026-10-21T18:52:33.162536+00:00"
+  },
+  "repository-after-archive": {
+    "id": "R_kgDOTlmogg",
+    "databaseId": 1314498690,
+    "nameWithOwner": "kotoba-lang/capability-data-cbor",
+    "isPrivate": false,
+    "isArchived": true,
+    "pushedAt": "2026-09-25T01:08:41Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "f7af7e702ede10f1a1fbcd9c0df2863386874fea"
+      }
+    },
+    "heads": {
+      "totalCount": 2,
+      "nodes": [
+        {
+          "name": "agent/reference-implemented-data-cbor",
+          "target": {
+            "oid": "58713612c8aa69156a26df9c35dc5df395aa577d"
+          }
+        },
+        {
+          "name": "main",
+          "target": {
+            "oid": "f7af7e702ede10f1a1fbcd9c0df2863386874fea"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 1
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  }
 }

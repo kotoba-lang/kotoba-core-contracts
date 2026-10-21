@@ -406,5 +406,55 @@
       "reviews": [],
       "review-comments": []
     }
-  ]
+  ],
+  "archive-readback": {
+    "repository": "kotoba-lang/capability-net-transport",
+    "action": "archive-readback",
+    "archived": true,
+    "source-and-refs-unchanged": true,
+    "qualified-main": "301f2310ca900f843bc801ead7f1500fe60ad64c",
+    "at": "2026-10-21T18:53:52.972937+00:00"
+  },
+  "repository-after-archive": {
+    "id": "R_kgDOTlnstw",
+    "databaseId": 1314516151,
+    "nameWithOwner": "kotoba-lang/capability-net-transport",
+    "isPrivate": false,
+    "isArchived": true,
+    "pushedAt": "2026-09-24T04:00:29Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "33ea97c229741c98681e4563c5d3ec8a7697f91d"
+      }
+    },
+    "heads": {
+      "totalCount": 1,
+      "nodes": [
+        {
+          "name": "main",
+          "target": {
+            "oid": "33ea97c229741c98681e4563c5d3ec8a7697f91d"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 1
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  }
 }

@@ -1152,5 +1152,67 @@
       "reviews": [],
       "review-comments": []
     }
-  ]
+  ],
+  "archive-readback": {
+    "repository": "kotoba-lang/capability-data-json",
+    "action": "archive-readback",
+    "archived": true,
+    "source-and-refs-unchanged": true,
+    "qualified-main": "301f2310ca900f843bc801ead7f1500fe60ad64c",
+    "at": "2026-10-21T18:52:35.696912+00:00"
+  },
+  "repository-after-archive": {
+    "id": "R_kgDOTlmouw",
+    "databaseId": 1314498747,
+    "nameWithOwner": "kotoba-lang/capability-data-json",
+    "isPrivate": false,
+    "isArchived": true,
+    "pushedAt": "2026-09-25T01:06:18Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "2f8700dca9086368475dbbd94bb5ed1095ad1b27"
+      }
+    },
+    "heads": {
+      "totalCount": 3,
+      "nodes": [
+        {
+          "name": "agent/cleanup-land-20260905",
+          "target": {
+            "oid": "884f1efcdb015c91f6ec1ce9a95a9b1d2336ebda"
+          }
+        },
+        {
+          "name": "agent/reference-implemented-data-json",
+          "target": {
+            "oid": "3708f48cee36010ac17884dc8807fb7d60ab2ed7"
+          }
+        },
+        {
+          "name": "main",
+          "target": {
+            "oid": "2f8700dca9086368475dbbd94bb5ed1095ad1b27"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 3
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  }
 }

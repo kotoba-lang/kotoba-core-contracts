@@ -559,5 +559,55 @@
       "review-comments": [],
       "patch-vs-default": ""
     }
-  ]
+  ],
+  "archive-readback": {
+    "repository": "kotoba-lang/capability-llm-infer",
+    "action": "archive-readback",
+    "archived": true,
+    "source-and-refs-unchanged": true,
+    "qualified-main": "301f2310ca900f843bc801ead7f1500fe60ad64c",
+    "at": "2026-10-21T18:53:26.789679+00:00"
+  },
+  "repository-after-archive": {
+    "id": "R_kgDOTlmqBg",
+    "databaseId": 1314499078,
+    "nameWithOwner": "kotoba-lang/capability-llm-infer",
+    "isPrivate": false,
+    "isArchived": true,
+    "pushedAt": "2026-09-29T19:02:11Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "53494266fb05b4f361b0333f8b26bcb3f7c507c7"
+      }
+    },
+    "heads": {
+      "totalCount": 1,
+      "nodes": [
+        {
+          "name": "main",
+          "target": {
+            "oid": "53494266fb05b4f361b0333f8b26bcb3f7c507c7"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 1
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  }
 }

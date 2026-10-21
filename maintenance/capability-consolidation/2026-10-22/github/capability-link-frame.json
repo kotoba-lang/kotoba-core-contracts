@@ -406,5 +406,55 @@
       "reviews": [],
       "review-comments": []
     }
-  ]
+  ],
+  "archive-readback": {
+    "repository": "kotoba-lang/capability-link-frame",
+    "action": "archive-readback",
+    "archived": true,
+    "source-and-refs-unchanged": true,
+    "qualified-main": "301f2310ca900f843bc801ead7f1500fe60ad64c",
+    "at": "2026-10-21T18:53:24.405596+00:00"
+  },
+  "repository-after-archive": {
+    "id": "R_kgDOUIcLRg",
+    "databaseId": 1351027526,
+    "nameWithOwner": "kotoba-lang/capability-link-frame",
+    "isPrivate": false,
+    "isArchived": true,
+    "pushedAt": "2026-09-24T03:59:38Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "ae212c6311d51024ffddaf0c8f86886993fc95f4"
+      }
+    },
+    "heads": {
+      "totalCount": 1,
+      "nodes": [
+        {
+          "name": "main",
+          "target": {
+            "oid": "ae212c6311d51024ffddaf0c8f86886993fc95f4"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 1
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  }
 }

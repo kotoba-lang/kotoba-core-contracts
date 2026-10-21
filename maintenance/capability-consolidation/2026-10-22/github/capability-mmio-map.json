@@ -781,5 +781,61 @@
       "reviews": [],
       "review-comments": []
     }
-  ]
+  ],
+  "archive-readback": {
+    "repository": "kotoba-lang/capability-mmio-map",
+    "action": "archive-readback",
+    "archived": true,
+    "source-and-refs-unchanged": true,
+    "qualified-main": "301f2310ca900f843bc801ead7f1500fe60ad64c",
+    "at": "2026-10-21T18:53:41.925049+00:00"
+  },
+  "repository-after-archive": {
+    "id": "R_kgDOTlnsHw",
+    "databaseId": 1314515999,
+    "nameWithOwner": "kotoba-lang/capability-mmio-map",
+    "isPrivate": false,
+    "isArchived": true,
+    "pushedAt": "2026-09-24T13:34:39Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "761147d8e09c7eab414c27fc6cadee3810847637"
+      }
+    },
+    "heads": {
+      "totalCount": 2,
+      "nodes": [
+        {
+          "name": "bot/kotoba-migration-20260903-181530",
+          "target": {
+            "oid": "cc9de5745812c7bc4a378ac8dd6b61aed51ecc20"
+          }
+        },
+        {
+          "name": "main",
+          "target": {
+            "oid": "761147d8e09c7eab414c27fc6cadee3810847637"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 2
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  }
 }
