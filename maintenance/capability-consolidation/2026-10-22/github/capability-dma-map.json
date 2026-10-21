@@ -408,5 +408,55 @@
       "reviews": [],
       "review-comments": []
     }
-  ]
+  ],
+  "archive-readback": {
+    "repository": "kotoba-lang/capability-dma-map",
+    "action": "archive-readback",
+    "archived": true,
+    "source-and-refs-unchanged": true,
+    "qualified-main": "301f2310ca900f843bc801ead7f1500fe60ad64c",
+    "at": "2026-10-21T18:52:38.351468+00:00"
+  },
+  "repository-after-archive": {
+    "id": "R_kgDOTlnpvw",
+    "databaseId": 1314515391,
+    "nameWithOwner": "kotoba-lang/capability-dma-map",
+    "isPrivate": false,
+    "isArchived": true,
+    "pushedAt": "2026-09-11T08:59:37Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "f0b45b04a1679d49c7cd2ecdec0815cff045b330"
+      }
+    },
+    "heads": {
+      "totalCount": 1,
+      "nodes": [
+        {
+          "name": "main",
+          "target": {
+            "oid": "f0b45b04a1679d49c7cd2ecdec0815cff045b330"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 1
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  }
 }

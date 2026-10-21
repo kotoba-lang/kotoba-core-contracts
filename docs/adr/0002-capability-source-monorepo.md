@@ -95,7 +95,8 @@ node scripts/capability-sources.mjs resolve io.github.kotoba-lang/capability-htt
 node scripts/capability-sources.mjs classpath kotoba.capability.http.fetch
 ```
 
-The current original 239 consumer-pin holds stay unchanged. Archive requires
-merged main, test/import readback and immediate ref/WIP checks; the receipt
-distinguishes pending from completed archives. Existing Actions remain in
+The current original 239 consumer-pin holds stay unchanged. All 61 source repositories are now archived after source main
+`301f2310ca900f843bc801ead7f1500fe60ad64c`, test/import readback and
+immediate ref/WIP checks. The receipt records each completed archive and its
+source/ref readback; no repository was deleted in this batch. Existing Actions remain in
 their prior states. Amu and other execution foundations remain separate.

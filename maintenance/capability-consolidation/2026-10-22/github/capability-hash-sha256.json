@@ -414,5 +414,61 @@
       "reviews": [],
       "review-comments": []
     }
-  ]
+  ],
+  "archive-readback": {
+    "repository": "kotoba-lang/capability-hash-sha256",
+    "action": "archive-readback",
+    "archived": true,
+    "source-and-refs-unchanged": true,
+    "qualified-main": "301f2310ca900f843bc801ead7f1500fe60ad64c",
+    "at": "2026-10-21T18:52:55.746053+00:00"
+  },
+  "repository-after-archive": {
+    "id": "R_kgDOTlmo8Q",
+    "databaseId": 1314498801,
+    "nameWithOwner": "kotoba-lang/capability-hash-sha256",
+    "isPrivate": false,
+    "isArchived": true,
+    "pushedAt": "2026-09-25T01:06:40Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "2cbd4cc3df25646ab551a652775210ddb385debf"
+      }
+    },
+    "heads": {
+      "totalCount": 2,
+      "nodes": [
+        {
+          "name": "agent/w6-hash-sha256-reference",
+          "target": {
+            "oid": "0c5ff30d23f6d567bd88aaea622ce2429b67f6bb"
+          }
+        },
+        {
+          "name": "main",
+          "target": {
+            "oid": "2cbd4cc3df25646ab551a652775210ddb385debf"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 1
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  }
 }
