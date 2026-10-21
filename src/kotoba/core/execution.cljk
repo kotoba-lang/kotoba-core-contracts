@@ -14,7 +14,7 @@
   [limits]
   (and (map? limits)
        (= #{:deadline-ms :max-items :max-bytes} (set (keys limits)))
-       (every? #(pos-int? (get limits %))
+       (every? (fn [x] (pos-int? (get limits x)))
                [:deadline-ms :max-items :max-bytes])))
 
 (def ability-keys
@@ -30,7 +30,7 @@
        (string? (:target ability)) (seq (:target ability))
        (keyword? (:operation ability))
        (string? (:audit-id ability)) (seq (:audit-id ability))
-       (every? #(pos-int? (get ability %))
+       (every? (fn [x] (pos-int? (get ability x)))
                [:max-bytes :max-items :deadline-ms])))
 
 (def plan-keys
