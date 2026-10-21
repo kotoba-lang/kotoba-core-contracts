@@ -1,0 +1,45 @@
+{
+  "repository-before-archive": {
+    "id": "R_kgDOTlnq4A",
+    "databaseId": 1314515680,
+    "nameWithOwner": "kotoba-lang/capability-irq-subscribe",
+    "isPrivate": false,
+    "isArchived": false,
+    "pushedAt": "2026-09-24T03:59:18Z",
+    "defaultBranchRef": {
+      "name": "main",
+      "target": {
+        "oid": "fe6bb055a306c43c6723b4e5633cc0b7bf0c4767"
+      }
+    },
+    "heads": {
+      "totalCount": 1,
+      "nodes": [
+        {
+          "name": "main",
+          "target": {
+            "oid": "fe6bb055a306c43c6723b4e5633cc0b7bf0c4767"
+          }
+        }
+      ]
+    },
+    "tags": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "openPRs": {
+      "totalCount": 0,
+      "nodes": []
+    },
+    "allPRs": {
+      "totalCount": 0
+    },
+    "openIssues": {
+      "totalCount": 0
+    },
+    "releases": {
+      "totalCount": 0
+    }
+  },
+  "closed-pulls": []
+}
